@@ -2,6 +2,7 @@
 #include <ncurses.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #define WIDTH getmaxx(stdscr)
@@ -20,6 +21,7 @@ void init();
 void init_colors();
 void init_wins();
 void open_dir(char *str);
+void print_main(int highlight);
 void colored_print(WINDOW *win, int y, int x, char *text, int color);
 void end();
 
@@ -32,16 +34,58 @@ int main()
 	open_dir(".");
 	
 	int ch;
+	int highlight = 1;
+	int choice = 0;
+	print_main(highlight);
 	while ((ch = getch()) != KEY_F(1)) {
-		for (int i = 0; i < ndirs; ++i) {
-			if (strchr(dirs[i], '.')) {
-				colored_print(main_win, 1 + i, 1, dirs[i], 3);
-			} else {
-				colored_print(main_win, 1 + i, 1, dirs[i], 2);	
+		while (1) {
+			ch = wgetch(main_win);
+			switch (ch) {	
+				case KEY_UP:
+					if (highlight == 1) {
+						highlight = ndirs;
+					} else {
+						--highlight;
+					}
+					break;
+
+				case KEY_DOWN:
+					if (highlight == ndirs) {
+						highlight = 1;
+					} else {
+						++highlight;
+					}
+					break;
+
+				case KEY_F(1):
+					choice = 0;
+					break;
+
+				case 10: // ENTER
+					choice = highlight;
+					break;
+
+				default:
+					refresh();
+					break;
 			}
-			wrefresh(main_win);
-			refresh();
+		
+			print_main(highlight);
+			if (choice != 0) {
+				break;
+			}
 		}
+		
+		#if 0		
+		// now we have a choice to go
+		char *new_choice = dirs[choice];
+		open_dir(new_choice);
+		
+		highlight = 1;
+		choice = 0;
+		print_main(highlight);
+		refresh();
+		#endif
 	}
 
 	end();
@@ -66,6 +110,7 @@ void init()
 
     mvprintw(0, 1, "Press any key to start. Press F1 to exit");	
 	refresh();
+	getch();
 }
 
 void init_wins() 
@@ -98,12 +143,29 @@ void open_dir(char *str)
 	}
 }
 
+void print_main(int highlight)
+{
+	for (int i = 0; i < ndirs; ++i) {
+		if (highlight == i + 1) {
+			wattron(main_win, A_REVERSE);
+			colored_print(main_win, 1 + i, 1, dirs[i], 2);
+			wattroff(main_win, A_REVERSE);
+		} else {
+			colored_print(main_win, 1 + i, 1, dirs[i], 2);
+		}
+	}
+
+	wrefresh(main_win);
+}
+
 void colored_print(WINDOW *win, int y, int x, char *text, int color)
 {
 	wattron(win, COLOR_PAIR(color));
 	mvwprintw(win, y, x, "%s\n", text);
 	wattroff(win, COLOR_PAIR(color));
 	box(win, 0, 0);
+	wrefresh(main_win);
+	refresh();
 }
 
 void end()
