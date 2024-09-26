@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #define WIDTH getmaxx(stdscr)
 #define HEIGHT getmaxy(stdscr) - 2
@@ -11,8 +12,15 @@
 DIR *d;
 WINDOW *main_win, *info_win;
 
-char *dirs[320000];
+#define DIRS_MAX 320000
+char *dirs[DIRS_MAX];
 int ndirs = 0;
+
+#define PATH_MAX 16000
+char cwd[PATH_MAX]; // current working directory
+
+#define TITLE_MAX 1000
+char new_dir[TITLE_MAX];
 
 int startx = 0;
 int starty = 1;
@@ -20,7 +28,10 @@ int starty = 1;
 void init();
 void init_colors();
 void init_wins();
-void open_dir(char *str);
+void get_cwd();
+void change_cwd();
+void open_cwd();
+void assign_ndir(char *new_dir, char *str);
 void print_main(int highlight);
 void colored_print(WINDOW *win, int y, int x, char *text, int color);
 void end();
@@ -31,13 +42,15 @@ int main()
 	init_colors();
 	
 	init_wins();
-	open_dir(".");
+
+	get_cwd();
+	open_cwd();
 	
-	int ch;
+	int ch = 0;
 	int highlight = 1;
 	int choice = 0;
 	print_main(highlight);
-	while ((ch = getch()) != KEY_F(1)) {
+	while (ch != KEY_F(1)) {
 		while (1) {
 			ch = wgetch(main_win);
 			switch (ch) {	
@@ -58,11 +71,12 @@ int main()
 					break;
 
 				case KEY_F(1):
-					choice = 0;
+					end();
+					exit(EXIT_SUCCESS);
 					break;
 
 				case 10: // ENTER
-					choice = highlight;
+					choice = highlight - 1;
 					break;
 
 				default:
@@ -76,16 +90,17 @@ int main()
 			}
 		}
 		
-		#if 0		
 		// now we have a choice to go
-		char *new_choice = dirs[choice];
-		open_dir(new_choice);
-		
+		//new_dir = dirs[choice];
+		assign_ndir(new_dir, dirs[choice]);
+		change_cwd();
+		open_cwd();
+
 		highlight = 1;
 		choice = 0;
 		print_main(highlight);
+
 		refresh();
-		#endif
 	}
 
 	end();
@@ -110,7 +125,6 @@ void init()
 
     mvprintw(0, 1, "Press any key to start. Press F1 to exit");	
 	refresh();
-	getch();
 }
 
 void init_wins() 
@@ -128,7 +142,31 @@ void init_wins()
 	wrefresh(info_win);
 }
 
-void open_dir(char *str)
+void get_cwd() 
+{
+	if (getcwd(cwd, sizeof(cwd)) == NULL) {
+		perror("getcwd error\n");
+		exit(EXIT_FAILURE);
+	}	
+}
+
+void change_cwd() 
+{
+	int last_slash;
+	for (int i = 0; cwd[i] != '\0'; ++i) {
+		if (cwd[i] == '/') {
+			last_slash = i;
+		}
+	}
+
+	int new_index = 0;
+	int index = last_slash;
+	while (new_dir[new_index] != '\0') {
+		cwd[++index] = new_dir[new_index++];
+	}
+}
+
+void open_cwd(char *str)
 {
 	for (int i = 0; i < ndirs; ++i) {
 		dirs[i] = "";
@@ -143,8 +181,18 @@ void open_dir(char *str)
 	}
 }
 
+void assign_ndir(char *new_dir, char *str)
+{
+	int index = 0;
+	while (str[index] != '\0') {
+		new_dir[index] = str[index];
+		++index;
+	}
+}
+
 void print_main(int highlight)
 {
+	wclear(main_win);
 	for (int i = 0; i < ndirs; ++i) {
 		if (highlight == i + 1) {
 			wattron(main_win, A_REVERSE);
