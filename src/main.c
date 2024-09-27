@@ -18,6 +18,7 @@ int ndirs = 0;
 
 #define PATH_MAX 16000
 char cwd[PATH_MAX]; // current working directory
+int ncwd = 0;
 
 #define TITLE_MAX 1000
 char new_dir[TITLE_MAX];
@@ -123,7 +124,7 @@ void init()
 	keypad(stdscr, TRUE);
 	curs_set(0);
 
-    mvprintw(0, 1, "Press any key to start. Press F1 to exit");	
+	mvprintw(0, 1, "Press any key to start. Press F1 to exit");	
 	refresh();
 }
 
@@ -148,42 +149,59 @@ void get_cwd()
 		perror("getcwd error\n");
 		exit(EXIT_FAILURE);
 	}	
+
+	while (cwd[ncwd] != '\0') {
+		++ncwd;
+	}
+
+	cwd[ncwd++] = '/';
 }
 
 void change_cwd() 
 {
-	int last_slash;
-	for (int i = 0; cwd[i] != '\0'; ++i) {
-		if (cwd[i] == '/') {
-			last_slash = i;
-		}
-	}
-
 	int new_index = 0;
-	int index = last_slash;
 	while (new_dir[new_index] != '\0') {
-		cwd[++index] = new_dir[new_index++];
+		cwd[ncwd++] = new_dir[new_index++];
 	}
+	cwd[ncwd++] = '/';
 }
 
-void open_cwd(char *str)
+void open_cwd()
 {
+	int index;
 	for (int i = 0; i < ndirs; ++i) {
-		dirs[i] = "";
+		index = 0;
+		while (dirs[i][index] != '\0') {
+			dirs[i][index++] = '\0';
+		}
 	}
 	ndirs = 0;
-	d = opendir(str);
+
+	d = opendir(cwd);
 	struct dirent *dir;
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
+			printw("%d %s\n", ndirs, dir->d_name);
+			refresh();
 			dirs[ndirs++] = dir->d_name;
 		}
+	} else {
+		end();
+		perror("Could not open a directory: ");
+		printf("%s\n", cwd);
+		exit(EXIT_FAILURE);
 	}
+	refresh();
 }
 
 void assign_ndir(char *new_dir, char *str)
 {
 	int index = 0;
+	while (new_dir[index] != '\0') {
+		new_dir[index++] = '\0';
+	}
+	
+	index = 0;
 	while (str[index] != '\0') {
 		new_dir[index] = str[index];
 		++index;
