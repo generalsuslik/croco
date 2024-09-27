@@ -32,7 +32,7 @@ void init_wins();
 void get_cwd();
 void change_cwd();
 void open_cwd();
-void assign_ndir(char *new_dir, char *str);
+void assign_ndir(char *new_dir, int choice);
 void print_main(int highlight);
 void colored_print(WINDOW *win, int y, int x, char *text, int color);
 void end();
@@ -77,7 +77,7 @@ int main()
 					break;
 
 				case 10: // ENTER
-					choice = highlight - 1;
+					choice = highlight;
 					break;
 
 				default:
@@ -91,16 +91,14 @@ int main()
 			}
 		}
 		
-		// now we have a choice to go
-		//new_dir = dirs[choice];
-		assign_ndir(new_dir, dirs[choice]);
+		assign_ndir(new_dir, --choice);
 		change_cwd();
 		open_cwd();
 
 		highlight = 1;
 		choice = 0;
 		print_main(highlight);
-
+		
 		refresh();
 	}
 
@@ -181,7 +179,7 @@ void open_cwd()
 	struct dirent *dir;
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
-			printw("%d %s\n", ndirs, dir->d_name);
+			//printw("%d %s\n", ndirs, dir->d_name);
 			refresh();
 			dirs[ndirs++] = dir->d_name;
 		}
@@ -194,7 +192,7 @@ void open_cwd()
 	refresh();
 }
 
-void assign_ndir(char *new_dir, char *str)
+void assign_ndir(char *new_dir, int choice)
 {
 	int index = 0;
 	while (new_dir[index] != '\0') {
@@ -202,8 +200,8 @@ void assign_ndir(char *new_dir, char *str)
 	}
 	
 	index = 0;
-	while (str[index] != '\0') {
-		new_dir[index] = str[index];
+	while (dirs[choice][index] != '\0') {
+		new_dir[index] = dirs[choice][index];
 		++index;
 	}
 }
