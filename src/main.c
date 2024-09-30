@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #define WIDTH getmaxx(stdscr)
@@ -33,6 +35,7 @@ void get_cwd();
 void change_cwd();
 void open_cwd();
 void assign_ndir(char *new_dir, int choice);
+bool is_file();
 void print_main(int highlight);
 void colored_print(WINDOW *win, int y, int x, char *text, int color);
 void end();
@@ -157,6 +160,16 @@ void get_cwd()
 
 void change_cwd() 
 {
+	if (strcmp(new_dir, ".") == 0) {
+		return;
+	}
+
+	if (strcmp(new_dir, "..") == 0) {
+		while (cwd[ncwd - 1] != '/') {
+			cwd[--ncwd] = '\0';
+		}
+	}
+
 	int new_index = 0;
 	while (new_dir[new_index] != '\0') {
 		cwd[ncwd++] = new_dir[new_index++];
@@ -179,7 +192,6 @@ void open_cwd()
 	struct dirent *dir;
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
-			//printw("%d %s\n", ndirs, dir->d_name);
 			refresh();
 			dirs[ndirs++] = dir->d_name;
 		}
@@ -206,16 +218,37 @@ void assign_ndir(char *new_dir, int choice)
 	}
 }
 
+bool is_file(int index)
+{
+	char ccwd[PATH_MAX] = { '\0' };
+	strcpy(ccwd, cwd);
+	strcat(ccwd, dirs[index]);
+	struct stat path_stat;
+	if (stat(ccwd, &path_stat) == 0 && S_ISREG(path_stat.st_mode)) {
+		return true;	
+	}
+
+	return false;
+}
+
 void print_main(int highlight)
 {
 	wclear(main_win);
 	for (int i = 0; i < ndirs; ++i) {
 		if (highlight == i + 1) {
 			wattron(main_win, A_REVERSE);
-			colored_print(main_win, 1 + i, 1, dirs[i], 2);
+			if (is_file(i)) {
+				mvwprintw(main_win, 1 + i, 1, dirs[i]);
+			} else {
+				colored_print(main_win, 1 + i, 1, dirs[i], 2);
+			}
 			wattroff(main_win, A_REVERSE);
 		} else {
-			colored_print(main_win, 1 + i, 1, dirs[i], 2);
+			if (is_file(i)) {
+				mvwprintw(main_win, 1 + i, 1, dirs[i]);
+			} else {
+				colored_print(main_win, 1 + i, 1, dirs[i], 2);
+			}
 		}
 	}
 
