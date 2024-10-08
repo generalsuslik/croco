@@ -29,9 +29,14 @@ char new_dir[TITLE_MAX];
 int startx = 0;
 int starty = 1;
 
+int ch = 0;
+int highlight = 1;
+int choice = 0;
+
 void init();
 void init_colors();
 void init_wins();
+void run();
 void get_cwd();
 void change_cwd();
 void open_cwd();
@@ -51,56 +56,10 @@ int main()
 	get_cwd();
 	open_cwd();
 	
-	int ch = 0;
-	int highlight = 1;
-	int choice = 0;
 	print_main(highlight);
 	while (ch != KEY_F(1)) {
-		while (1) {
-			ch = wgetch(main_win);
-			switch (ch) {	
-				case KEY_UP:
-					if (highlight == 1) {
-						highlight = ndirs;
-					} else if (top_index == HEIGHT + 1) {
-						top_index = 0;
-						--highlight;
-					} else {
-						--highlight;
-					}
-					break;
+		run();
 
-				case KEY_DOWN:
-					if (highlight == ndirs) {
-						highlight = 1;
-					} else if (highlight == HEIGHT - 4) {
-						++highlight;
-						top_index = HEIGHT - 4;
-					} else {
-						++highlight;
-					}
-					break;
-
-				case KEY_F(1):
-					end();
-					exit(EXIT_SUCCESS);
-					break;
-
-				case 10: // ENTER
-					choice = highlight;
-					break;
-
-				default:
-					refresh();
-					break;
-			}
-		
-			print_main(highlight);
-			if (choice != 0) {
-				break;
-			}
-		}
-		
 		assign_ndir(new_dir, --choice);
 		change_cwd();
 		open_cwd();
@@ -155,6 +114,56 @@ void init_wins()
 	box(control_win, 0, 0);
 	refresh();
 	wrefresh(control_win);
+}
+
+void run()
+{
+	while (1) {
+		ch = wgetch(main_win);
+		switch (ch) {	
+			case KEY_UP:
+				if (highlight == 1) {
+					highlight = ndirs;
+					top_index += (HEIGHT - 4) * (ndirs / (HEIGHT - 4));
+				} else if (highlight % (HEIGHT - 3) == 0) {
+					top_index = 0;
+					--highlight;
+				} else {
+					--highlight;
+				}
+				break;
+
+			case KEY_DOWN:
+				if (highlight == ndirs) {
+					highlight = 1;
+					top_index = 0;
+				} else if (highlight % (HEIGHT - 4) == 0) {
+					++highlight;
+					top_index += (HEIGHT - 4) * (ndirs / (HEIGHT - 4));
+				} else {
+					++highlight;
+				}
+				break;
+
+			case KEY_F(1):
+				end();
+				exit(EXIT_SUCCESS);
+				break;
+
+			case 10: // ENTER
+				choice = highlight;
+				break;
+
+			default:
+				refresh();
+				break;
+		}
+		
+		print_main(highlight);
+		if (choice != 0) {
+			break;
+		}
+	}
 }
 
 void get_cwd() 
