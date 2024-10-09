@@ -9,10 +9,12 @@
 #include <unistd.h>
 
 #define WIDTH getmaxx(stdscr)
-#define HEIGHT getmaxy(stdscr) - 2
+#define HEIGHT getmaxy(stdscr)
 
 DIR *d;
 WINDOW *main_win, *info_win, *control_win;
+
+FILE *log_f;
 
 #define DIRS_MAX 320000
 char *dirs[DIRS_MAX];
@@ -36,18 +38,27 @@ int choice = 0;
 void init();
 void init_colors();
 void init_wins();
+void check_win_err();
 void run();
+void print_info();
+void print_control();
 void get_cwd();
 void change_cwd();
 void open_cwd();
 void assign_ndir(char *new_dir, int choice);
 bool is_file();
-void print_main(int highlight);
+void print_main();
 void colored_print(WINDOW *win, int y, int x, char *text, int color);
 void end();
 
 int main()
 {
+	log_f = fopen("log.txt", "w");
+	if (!log_f) {
+		fprintf(stderr, "log file not opened\n");
+		exit(EXIT_FAILURE);
+	}
+
 	init();
 	init_colors();
 	
@@ -57,8 +68,10 @@ int main()
 	open_cwd();
 	
 	print_main(highlight);
+	print_info();
 	while (ch != KEY_F(1)) {
 		run();
+		print_info();
 
 		assign_ndir(new_dir, --choice);
 		change_cwd();
@@ -67,19 +80,13 @@ int main()
 		highlight = 1;
 		choice = 0;
 		print_main(highlight);
-		
+	
 		refresh();
 	}
-
+	
 	end();
+	fclose(log_f);
 	return 0;
-}
-
-void init_colors() 
-{
-	init_pair(1, COLOR_CYAN, COLOR_BLACK);
-	init_pair(2, COLOR_GREEN, COLOR_BLACK); // for binaries
-	init_pair(3, COLOR_BLUE, COLOR_BLACK); 	// for folders
 }
 
 void init()
@@ -95,30 +102,67 @@ void init()
 	refresh();
 }
 
+void init_colors() 
+{
+	init_pair(1, COLOR_CYAN, COLOR_BLACK);
+	init_pair(2, COLOR_GREEN, COLOR_BLACK); // for binaries
+	init_pair(3, COLOR_BLUE, COLOR_BLACK); 	// for folders
+}
+
 void init_wins() 
 {
-	main_win = newwin(HEIGHT, WIDTH / 2, starty, startx);
+	main_win = newwin(HEIGHT - 1, WIDTH / 2, starty, startx);
 	keypad(main_win, TRUE);
 	box(main_win, 0, 0);
 	refresh();
 	wrefresh(main_win);
-
-	info_win = newwin(HEIGHT / 2 - 1, WIDTH / 2, starty, startx + WIDTH / 2);
+	
+	info_win = newwin(3 * HEIGHT / 4, WIDTH / 2, starty, startx + WIDTH / 2);
 	keypad(info_win, FALSE);
 	box(info_win, 0, 0);
 	refresh();
 	wrefresh(info_win);
 
-	control_win = newwin(HEIGHT / 2 - 1, WIDTH / 2, starty + HEIGHT / 2 + 1, startx + WIDTH / 2);
+	control_win = newwin(HEIGHT / 4 - 1, WIDTH / 2, starty + 3 * HEIGHT / 4, startx + WIDTH / 2);
 	keypad(control_win, FALSE);
 	box(control_win, 0, 0);
 	refresh();
 	wrefresh(control_win);
+
+	check_win_err();	
+	
+	print_control();
+}
+
+void check_win_err()
+{
+	if (main_win == NULL) {
+		end();
+		fprintf(stderr, "main err\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (info_win == NULL) {
+		end();
+		fprintf(stderr, "info err\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (control_win == NULL) {
+		end();
+		fprintf(stderr, "control err\n");
+		exit(EXIT_FAILURE);
+	}
+
+	fprintf(log_f, "main & info & control\n");
 }
 
 void run()
 {
 	while (1) {
+		print_main(highlight);
+		print_info();
+
 		ch = wgetch(main_win);
 		switch (ch) {	
 			case KEY_UP:
@@ -158,8 +202,7 @@ void run()
 				refresh();
 				break;
 		}
-		
-		print_main(highlight);
+			
 		if (choice != 0) {
 			break;
 		}
@@ -222,7 +265,7 @@ void open_cwd()
 	} else {
 		end();
 		perror("Could not open a directory: ");
-		printf("%s\n", cwd);
+		fprintf(stdout, "%s\n", cwd);
 		exit(EXIT_FAILURE);
 	}
 	refresh();
@@ -255,7 +298,7 @@ bool is_file(int index)
 	return false;
 }
 
-void print_main(int highlight)
+void print_main()
 {	
 	wclear(main_win);
 	mvwprintw(main_win, 1, 0, "%s", cwd);
@@ -293,8 +336,38 @@ void colored_print(WINDOW *win, int y, int x, char *text, int color)
 	refresh();
 }
 
+void print_info()
+{
+	wclear(info_win);
+	box(info_win, 0, 0);
+	mvwprintw(info_win, 1, 1, "%s", dirs[highlight - 1]);
+	wrefresh(info_win);
+}
+
+void print_control()
+{
+	wclear(control_win);
+	box(control_win, 0, 0);
+
+	char *options[] = {
+		"Ctrl + D - delete file/folder\n",
+		"Ctrl + A - add node to folder\n",
+		"Ctrl + R - rename file/folder\n",
+		"Ctrl + E - edit file\n"
+	};
+	size_t n = sizeof(options) / sizeof(char *);
+
+	for (size_t i = 0; i < n; ++i) {
+		mvwprintw(control_win, i + 1, 1, options[i]);
+	}
+	wrefresh(control_win);	
+}
+
 void end()
 {
+	delwin(main_win);
+	delwin(info_win);
+	delwin(control_win);
 	endwin();
 }
 
