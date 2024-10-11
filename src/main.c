@@ -11,6 +11,25 @@
 #define WIDTH getmaxx(stdscr)
 #define HEIGHT getmaxy(stdscr)
 
+/*
+ * for margin for 
+ * the list of files/folders
+ */
+#define MARGIN_TOP 6
+
+/*
+ * margin for win
+ */
+#define WIN_MARGIN 2
+
+#define MAIN_HEIGHT    HEIGHT - WIN_MARGIN
+#define MAIN_WIDTH     WIDTH / 2
+#define INFO_HEIGHT    3 * HEIGHT / 4
+#define INFO_WIDTH     WIDTH / 2
+#define CONTROL_HEIGHT HEIGHT / 4 - WIN_MARGIN
+#define CONTROL_WIDTH  WIDTH / 2
+
+
 DIR *d;
 WINDOW *main_win, *info_win, *control_win;
 
@@ -25,16 +44,6 @@ int top_index = 0;  // cwd[top_index] will be shown on top of the main_win. it's
 
 #define TITLE_MAX 1000
 char new_dir[TITLE_MAX];
-
-/*
- * struct that is used to 
- * return pos of the cursor
- * position of a cursor
- */
-typedef struct {
-	int y;
-	int x;	
-} curs_pos;
 
 int startx = 0;
 int starty = 1;
@@ -52,13 +61,14 @@ void get_cwd();
 void change_cwd();
 void open_cwd();
 void assign_ndir(char *new_dir, int choice);
-bool is_file();
+bool is_file(char *fname);
 void print_main();
 void colored_print(WINDOW *win, int y, int x, char *text, int color);
 void print_info();
 void print_control();
+char *create_path(char *fullpath, char *src, char *fname);
 void print_file(char *fname);
-curs_pos get_curpos();
+void print_folder(char *fname);
 void end();
 
 int main()
@@ -109,24 +119,25 @@ void init_colors()
 	init_pair(1, COLOR_CYAN, COLOR_BLACK);
 	init_pair(2, COLOR_GREEN, COLOR_BLACK); // for binaries
 	init_pair(3, COLOR_BLUE, COLOR_BLACK); 	// for folders
-	init_pair(4, COLOR_RED, COLOR_BLACK);  
+	init_pair(4, COLOR_RED, COLOR_BLACK); 
+	init_pair(5, COLOR_YELLOW, COLOR_BLACK);	
 }
 
 void init_wins() 
 {
-	main_win = newwin(HEIGHT - 1, WIDTH / 2, starty, startx);
+	main_win = newwin(MAIN_HEIGHT, MAIN_WIDTH, starty, startx);
 	keypad(main_win, TRUE);
 	box(main_win, 0, 0);
 	refresh();
 	wrefresh(main_win);
 	
-	info_win = newwin(3 * HEIGHT / 4, WIDTH / 2, starty, startx + WIDTH / 2);
+	info_win = newwin(INFO_HEIGHT, INFO_WIDTH, starty, startx + MAIN_WIDTH);
 	keypad(info_win, FALSE);
 	box(info_win, 0, 0);
 	refresh();
 	wrefresh(info_win);
 
-	control_win = newwin(HEIGHT / 4 - 1, WIDTH / 2, starty + 3 * HEIGHT / 4, startx + WIDTH / 2);
+	control_win = newwin(CONTROL_HEIGHT, CONTROL_WIDTH, starty + INFO_HEIGHT, startx + MAIN_WIDTH);
 	keypad(control_win, FALSE);
 	box(control_win, 0, 0);
 	refresh();
@@ -169,9 +180,9 @@ void run()
 			case KEY_UP:
 				if (highlight == 1) {
 					highlight = ndirs;
-					top_index += (HEIGHT - 4) * (ndirs / (HEIGHT - 4));
-				} else if (highlight % (HEIGHT - 3) == 0) {
-					top_index = 0;
+					top_index += (HEIGHT - MARGIN_TOP) * (ndirs / (HEIGHT - MARGIN_TOP));
+				} else if (highlight % (HEIGHT - MARGIN_TOP + 1) == 0) {
+					top_index -= (HEIGHT - MARGIN_TOP);
 					--highlight;
 				} else {
 					--highlight;
@@ -182,9 +193,9 @@ void run()
 				if (highlight == ndirs) {
 					highlight = 1;
 					top_index = 0;
-				} else if (highlight % (HEIGHT - 4) == 0) {
+				} else if (highlight % (HEIGHT - MARGIN_TOP) == 0) {
 					++highlight;
-					top_index += (HEIGHT - 4) * (ndirs / (HEIGHT - 4));
+					top_index += (HEIGHT - MARGIN_TOP);
 				} else {
 					++highlight;
 				}
@@ -286,11 +297,10 @@ void assign_ndir(char *new_dir, int choice)
 	}
 }
 
-bool is_file(int index)
+bool is_file(char *fname)
 {
 	char ccwd[PATH_MAX] = { '\0' };
-	strcpy(ccwd, cwd);
-	strcat(ccwd, dirs[index]);
+	create_path(ccwd, cwd, fname);
 	struct stat path_stat;
 	if (stat(ccwd, &path_stat) == 0 && S_ISREG(path_stat.st_mode)) {
 		return true;	
@@ -314,14 +324,14 @@ void print_main()
 		pos_i = 3 + i - top_index;
 		if (highlight == i + 1) {
 			wattron(main_win, A_REVERSE);
-			if (is_file(i)) {
+			if (is_file(dirs[i])) {
 				mvwprintw(main_win, pos_i, 1, dirs[i]);
 			} else {
 				colored_print(main_win, pos_i, 1, dirs[i], 2);
 			}
 			wattroff(main_win, A_REVERSE);
 		} else {
-			if (is_file(i)) {
+			if (is_file(dirs[i])) {
 				mvwprintw(main_win, pos_i, 1, dirs[i]);
 			} else {
 				colored_print(main_win, pos_i, 1, dirs[i], 2);
@@ -337,14 +347,20 @@ void print_info()
 	wclear(info_win);
 	
 	/* printing file/dir name in color in info win */	
-	colored_print(info_win, 1, 1, dirs[highlight - 1], 4);
-
+	if (is_file(dirs[highlight - 1])) {
+		colored_print(info_win, 1, 1, dirs[highlight - 1], 5);
+	} else {
+		colored_print(info_win, 1, 1, dirs[highlight - 1], 4);
+	}
+	
 	/* adding a line delimeter */
 	mvwhline(info_win, 2, 1, 0, WIDTH / 2 - 2);
 	
-	if (is_file(highlight - 1)) {
+	if (is_file(dirs[highlight - 1])) {
 		print_file(dirs[highlight - 1]);
-	} 
+	} else {
+		print_folder(dirs[highlight - 1]);
+	}
 
 	wrefresh(info_win);
 }
@@ -379,32 +395,39 @@ void colored_print(WINDOW *win, int y, int x, char *text, int color)
 	refresh();
 }
 
+char *create_path(char *fullpath, char *src, char *fname)
+{
+	strcpy(fullpath, src);
+	strcat(fullpath, fname);
+
+	return fullpath;
+}
+
 void print_file(char *fname)
 {
-	char fullname[PATH_MAX] = { '\0' };
-	strcpy(fullname, cwd);
-	strcat(fullname, fname);
-	
-	FILE *f_ptr = fopen(fullname, "r");
+	char fpath[PATH_MAX] = { '\0' };
+	create_path(fpath, cwd, fname);
+
+	FILE *f_ptr = fopen(fpath, "r");
 	if (f_ptr == NULL) {
 		end();
 		fprintf(stderr, "Could not open a file %s\n", fname);
 	}
 
 	char ch;
-	int y;
-	int x;
+	int cur_y;
+	int cur_x;
 
 	int print_y = 3;
 	int print_x = 1;
 	wmove(info_win, print_y, print_x);
 	while ((ch = fgetc(f_ptr)) != EOF) {
-		getyx(info_win, y, x);
-		if (x == 0) {
+		getyx(info_win, cur_y, cur_x);
+		if (cur_x == 0) {
 			wmove(info_win, ++print_y, print_x);
 		}
 		
-		if (y > HEIGHT * 3 / 4 - 2) {
+		if (cur_y > INFO_HEIGHT - 2) {
 			break;
 		}
 
@@ -415,14 +438,45 @@ void print_file(char *fname)
 	box(info_win, 0, 0);
 }
 
-curs_pos get_curpos(WINDOW *win) 
+void print_folder(char *fname)
 {
-	int y;
-	int x;
-	getyx(win, y, x);
+	char fpath[PATH_MAX] = { '\0' };
+	create_path(fpath, cwd, fname);
+	
+	DIR *fd;
+	struct dirent *fdir;
+	fd = opendir(fpath);
 
-	curs_pos cpos = { y, x };
-	return cpos;
+	char *fd_name;
+	int cur_y = 3;
+	int cur_x = 2;
+
+	int print_y = 3;
+	int print_x = 1;
+	wmove(info_win, print_y, print_x);
+	if (fd) {
+		while ((fdir = readdir(fd)) != NULL) {
+			getyx(info_win, cur_y, cur_x);
+			if (cur_x == 0) {
+				wmove(info_win, ++print_y, print_x);
+			}
+
+			if (cur_y > INFO_HEIGHT - 2) {
+				break;
+			}
+
+			fd_name = fdir->d_name;
+			if (strcmp(fd_name, ".") != 0 && strcmp(fd_name, "..") != 0) {
+				if (is_file(fd_name)) {
+					mvwprintw(info_win, print_y, print_x, "%s\n", fd_name);
+				} else {
+					colored_print(info_win, print_y, print_x, fd_name, 2);
+				}
+			}
+		}
+
+		closedir(fd);
+	}
 }
 
 void end()
