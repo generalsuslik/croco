@@ -14,8 +14,6 @@
 DIR *d;
 WINDOW *main_win, *info_win, *control_win;
 
-FILE *log_f;
-
 #define DIRS_MAX 320000
 char *dirs[DIRS_MAX];
 int ndirs = 0;
@@ -27,6 +25,16 @@ int top_index = 0;  // cwd[top_index] will be shown on top of the main_win. it's
 
 #define TITLE_MAX 1000
 char new_dir[TITLE_MAX];
+
+/*
+ * struct that is used to 
+ * return pos of the cursor
+ * position of a cursor
+ */
+typedef struct {
+	int y;
+	int x;	
+} curs_pos;
 
 int startx = 0;
 int starty = 1;
@@ -40,8 +48,6 @@ void init_colors();
 void init_wins();
 void check_win_err();
 void run();
-void print_info();
-void print_control();
 void get_cwd();
 void change_cwd();
 void open_cwd();
@@ -49,16 +55,14 @@ void assign_ndir(char *new_dir, int choice);
 bool is_file();
 void print_main();
 void colored_print(WINDOW *win, int y, int x, char *text, int color);
+void print_info();
+void print_control();
+void print_file(char *fname);
+curs_pos get_curpos();
 void end();
 
 int main()
 {
-	log_f = fopen("log.txt", "w");
-	if (!log_f) {
-		fprintf(stderr, "log file not opened\n");
-		exit(EXIT_FAILURE);
-	}
-
 	init();
 	init_colors();
 	
@@ -67,11 +71,10 @@ int main()
 	get_cwd();
 	open_cwd();
 	
-	print_main(highlight);
+	print_main();
 	print_info();
 	while (ch != KEY_F(1)) {
 		run();
-		print_info();
 
 		assign_ndir(new_dir, --choice);
 		change_cwd();
@@ -85,7 +88,6 @@ int main()
 	}
 	
 	end();
-	fclose(log_f);
 	return 0;
 }
 
@@ -97,7 +99,7 @@ void init()
 	noecho();
 	keypad(stdscr, TRUE);
 	curs_set(0);
-
+	
 	mvprintw(0, 1, "Press any key to start. Press F1 to exit");	
 	refresh();
 }
@@ -107,6 +109,7 @@ void init_colors()
 	init_pair(1, COLOR_CYAN, COLOR_BLACK);
 	init_pair(2, COLOR_GREEN, COLOR_BLACK); // for binaries
 	init_pair(3, COLOR_BLUE, COLOR_BLACK); 	// for folders
+	init_pair(4, COLOR_RED, COLOR_BLACK);  
 }
 
 void init_wins() 
@@ -153,14 +156,12 @@ void check_win_err()
 		fprintf(stderr, "control err\n");
 		exit(EXIT_FAILURE);
 	}
-
-	fprintf(log_f, "main & info & control\n");
 }
 
 void run()
 {
 	while (1) {
-		print_main(highlight);
+		print_main();
 		print_info();
 
 		ch = wgetch(main_win);
@@ -301,8 +302,13 @@ bool is_file(int index)
 void print_main()
 {	
 	wclear(main_win);
-	mvwprintw(main_win, 1, 0, "%s", cwd);
+
+	/* printing colored cwd */
+	colored_print(main_win, 1, 0, cwd, 1);
+	
+	/* adding a line delimeter */
 	mvwhline(main_win, 2, 0, 0, WIDTH / 2);
+
 	int pos_i = 0;
 	for (int i = top_index; i < ndirs; ++i) {
 		pos_i = 3 + i - top_index;
@@ -326,21 +332,20 @@ void print_main()
 	wrefresh(main_win);
 }
 
-void colored_print(WINDOW *win, int y, int x, char *text, int color)
-{
-	wattron(win, COLOR_PAIR(color));
-	mvwprintw(win, y, x, "%s\n", text);
-	wattroff(win, COLOR_PAIR(color));
-	box(win, 0, 0);
-	wrefresh(main_win);
-	refresh();
-}
-
 void print_info()
 {
 	wclear(info_win);
-	box(info_win, 0, 0);
-	mvwprintw(info_win, 1, 1, "%s", dirs[highlight - 1]);
+	
+	/* printing file/dir name in color in info win */	
+	colored_print(info_win, 1, 1, dirs[highlight - 1], 4);
+
+	/* adding a line delimeter */
+	mvwhline(info_win, 2, 1, 0, WIDTH / 2 - 2);
+	
+	if (is_file(highlight - 1)) {
+		print_file(dirs[highlight - 1]);
+	} 
+
 	wrefresh(info_win);
 }
 
@@ -353,14 +358,71 @@ void print_control()
 		"Ctrl + D - delete file/folder\n",
 		"Ctrl + A - add node to folder\n",
 		"Ctrl + R - rename file/folder\n",
-		"Ctrl + E - edit file\n"
 	};
 	size_t n = sizeof(options) / sizeof(char *);
 
 	for (size_t i = 0; i < n; ++i) {
 		mvwprintw(control_win, i + 1, 1, options[i]);
 	}
+	
+	box(control_win, 0, 0);
 	wrefresh(control_win);	
+}
+
+void colored_print(WINDOW *win, int y, int x, char *text, int color)
+{
+	wattron(win, COLOR_PAIR(color));
+	mvwprintw(win, y, x, "%s\n", text);
+	wattroff(win, COLOR_PAIR(color));
+	box(win, 0, 0);
+	wrefresh(main_win);
+	refresh();
+}
+
+void print_file(char *fname)
+{
+	char fullname[PATH_MAX] = { '\0' };
+	strcpy(fullname, cwd);
+	strcat(fullname, fname);
+	
+	FILE *f_ptr = fopen(fullname, "r");
+	if (f_ptr == NULL) {
+		end();
+		fprintf(stderr, "Could not open a file %s\n", fname);
+	}
+
+	char ch;
+	int y;
+	int x;
+
+	int print_y = 3;
+	int print_x = 1;
+	wmove(info_win, print_y, print_x);
+	while ((ch = fgetc(f_ptr)) != EOF) {
+		getyx(info_win, y, x);
+		if (x == 0) {
+			wmove(info_win, ++print_y, print_x);
+		}
+		
+		if (y > HEIGHT * 3 / 4 - 2) {
+			break;
+		}
+
+		wprintw(info_win, "%c", ch);
+	}
+
+	fclose(f_ptr);
+	box(info_win, 0, 0);
+}
+
+curs_pos get_curpos(WINDOW *win) 
+{
+	int y;
+	int x;
+	getyx(win, y, x);
+
+	curs_pos cpos = { y, x };
+	return cpos;
 }
 
 void end()
