@@ -12,7 +12,7 @@
 #define HEIGHT getmaxy(stdscr)
 
 /*
- * for margin for 
+ * margin for 
  * the list of files/folders
  */
 #define MARGIN_TOP 6
@@ -29,8 +29,6 @@
 #define CONTROL_HEIGHT HEIGHT / 4 - WIN_MARGIN
 #define CONTROL_WIDTH  WIDTH / 2
 
-
-DIR *d;
 WINDOW *main_win, *info_win, *control_win;
 
 #define DIRS_MAX 320000
@@ -266,7 +264,8 @@ void open_cwd()
 		}
 	}
 	ndirs = 0;
-
+	
+	DIR *d;
 	d = opendir(cwd);
 	struct dirent *dir;
 	if (d) {
@@ -280,6 +279,7 @@ void open_cwd()
 		fprintf(stdout, "%s\n", cwd);
 		exit(EXIT_FAILURE);
 	}
+	//closedir(d);
 	refresh();
 }
 
@@ -374,6 +374,8 @@ void print_control()
 		"Ctrl + D - delete file/folder\n",
 		"Ctrl + A - add node to folder\n",
 		"Ctrl + R - rename file/folder\n",
+		":<command_name> - enter to execute a command\n",
+		":h - help\n"
 	};
 	size_t n = sizeof(options) / sizeof(char *);
 
