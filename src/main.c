@@ -64,7 +64,7 @@ void print_main();
 void colored_print(WINDOW *win, int y, int x, char *text, int color);
 void print_info();
 void print_control();
-char *create_path(char *fullpath, char *src, char *fname);
+void create_path(char *fullpath, char *src, char *fname);
 void print_file(char *fname);
 void print_folder(char *fname);
 void end();
@@ -99,6 +99,9 @@ int main()
 	return 0;
 }
 
+/*
+ * init curses
+ */
 void init()
 {
 	initscr();
@@ -112,15 +115,32 @@ void init()
 	refresh();
 }
 
+#define d_COLOR_CYAN   1
+#define d_COLOR_GREEN  2
+#define d_COLOR_BLUE   3
+#define d_COLOR_RED    4
+#define d_COLOR_YELLOW 5
+
+#define BINARY_COLOR      d_COLOR_GREEN
+#define FOLDER_COLOR      d_COLOR_BLUE
+#define INFO_FOLDER_COLOR d_COLOR_RED
+#define INFO_FILE_COLOR   d_COLOR_YELLOW
+
 void init_colors() 
 {
-	init_pair(1, COLOR_CYAN, COLOR_BLACK);
-	init_pair(2, COLOR_GREEN, COLOR_BLACK); // for binaries
-	init_pair(3, COLOR_BLUE, COLOR_BLACK); 	// for folders
-	init_pair(4, COLOR_RED, COLOR_BLACK); 
-	init_pair(5, COLOR_YELLOW, COLOR_BLACK);	
+	init_pair(d_COLOR_CYAN, COLOR_CYAN, COLOR_BLACK);
+	init_pair(d_COLOR_GREEN, COLOR_GREEN, COLOR_BLACK); // for binaries
+	init_pair(d_COLOR_BLUE, COLOR_BLUE, COLOR_BLACK); 	// for folders
+	init_pair(d_COLOR_RED, COLOR_RED, COLOR_BLACK); 
+	init_pair(d_COLOR_YELLOW, COLOR_YELLOW, COLOR_BLACK);	
 }
 
+/*
+ * initializes windows:
+ * main, info, control. - i.e. non-modal windows
+ * these windows are gonna be shown to
+ * user on startup
+ */
 void init_wins() 
 {
 	main_win = newwin(MAIN_HEIGHT, MAIN_WIDTH, starty, startx);
@@ -233,6 +253,10 @@ void get_cwd()
 	cwd[ncwd++] = '/';
 }
 
+/*
+ * changes cwd
+ * (current working directory)
+ */
 void change_cwd() 
 {
 	if (strcmp(new_dir, ".") == 0) {
@@ -254,6 +278,10 @@ void change_cwd()
 	cwd[ncwd++] = '/';
 }
 
+/*
+ * opens cwd
+ * (current working directory)
+ */
 void open_cwd()
 {
 	int index;
@@ -283,6 +311,9 @@ void open_cwd()
 	refresh();
 }
 
+/*
+ * assignes chosen option to a new_dir
+ */
 void assign_ndir(char *new_dir, int choice)
 {
 	int index = 0;
@@ -309,6 +340,11 @@ bool is_file(char *fname)
 	return false;
 }
 
+/*
+ * prints main window contend:
+ * list of files and folders 
+ * in cwd (current working directory)
+ */
 void print_main()
 {	
 	wclear(main_win);
@@ -327,14 +363,14 @@ void print_main()
 			if (is_file(dirs[i])) {
 				mvwprintw(main_win, pos_i, 1, dirs[i]);
 			} else {
-				colored_print(main_win, pos_i, 1, dirs[i], 2);
+				colored_print(main_win, pos_i, 1, dirs[i], FOLDER_COLOR);
 			}
 			wattroff(main_win, A_REVERSE);
 		} else {
 			if (is_file(dirs[i])) {
 				mvwprintw(main_win, pos_i, 1, dirs[i]);
 			} else {
-				colored_print(main_win, pos_i, 1, dirs[i], 2);
+				colored_print(main_win, pos_i, 1, dirs[i], FOLDER_COLOR);
 			}
 		}
 	}
@@ -342,15 +378,20 @@ void print_main()
 	wrefresh(main_win);
 }
 
+/*
+ * prints info window content
+ * depending on what is highlighted 
+ * in the main window
+ */
 void print_info()
 {
 	wclear(info_win);
 	
 	/* printing file/dir name in color in info win */	
 	if (is_file(dirs[highlight - 1])) {
-		colored_print(info_win, 1, 1, dirs[highlight - 1], 5);
+		colored_print(info_win, 1, 1, dirs[highlight - 1], INFO_FILE_COLOR);
 	} else {
-		colored_print(info_win, 1, 1, dirs[highlight - 1], 4);
+		colored_print(info_win, 1, 1, dirs[highlight - 1], INFO_FOLDER_COLOR);
 	}
 	
 	/* adding a line delimeter */
@@ -365,6 +406,9 @@ void print_info()
 	wrefresh(info_win);
 }
 
+/*
+ * prints control window content
+ */
 void print_control()
 {
 	wclear(control_win);
@@ -397,14 +441,20 @@ void colored_print(WINDOW *win, int y, int x, char *text, int color)
 	refresh();
 }
 
-char *create_path(char *fullpath, char *src, char *fname)
+/*
+ * creates path like: 
+ * fullpath = src + fname
+ */
+void create_path(char *fullpath, char *src, char *fname)
 {
 	strcpy(fullpath, src);
 	strcat(fullpath, fname);
-
-	return fullpath;
 }
 
+/*
+ * prints content of the file <fname>
+ * to the info window
+ */
 void print_file(char *fname)
 {
 	char fpath[PATH_MAX] = { '\0' };
@@ -440,6 +490,10 @@ void print_file(char *fname)
 	box(info_win, 0, 0);
 }
 
+/*
+ * prints content of the folder <fname>
+ * to the info window
+ */
 void print_folder(char *fname)
 {
 	char fpath[PATH_MAX] = { '\0' };
@@ -468,11 +522,12 @@ void print_folder(char *fname)
 			}
 
 			fd_name = fdir->d_name;
+			// not goin to print . and .. folders in info window
 			if (strcmp(fd_name, ".") != 0 && strcmp(fd_name, "..") != 0) {
 				if (is_file(fd_name)) {
 					mvwprintw(info_win, print_y, print_x, "%s\n", fd_name);
 				} else {
-					colored_print(info_win, print_y, print_x, fd_name, 2);
+					colored_print(info_win, print_y, print_x, fd_name, FOLDER_COLOR);
 				}
 			}
 		}
