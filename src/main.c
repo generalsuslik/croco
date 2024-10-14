@@ -59,7 +59,7 @@ void get_cwd();
 void change_cwd();
 void open_cwd();
 void assign_ndir(char *new_dir, int choice);
-bool is_file(char *fname);
+bool is_file(char *src, char *fname);
 void print_main();
 void colored_print(WINDOW *win, int y, int x, char *text, int color);
 void print_info();
@@ -129,8 +129,8 @@ void init()
 void init_colors() 
 {
 	init_pair(d_COLOR_CYAN, COLOR_CYAN, COLOR_BLACK);
-	init_pair(d_COLOR_GREEN, COLOR_GREEN, COLOR_BLACK); // for binaries
-	init_pair(d_COLOR_BLUE, COLOR_BLUE, COLOR_BLACK); 	// for folders
+	init_pair(d_COLOR_GREEN, COLOR_GREEN, COLOR_BLACK); 
+	init_pair(d_COLOR_BLUE, COLOR_BLUE, COLOR_BLACK); 	
 	init_pair(d_COLOR_RED, COLOR_RED, COLOR_BLACK); 
 	init_pair(d_COLOR_YELLOW, COLOR_YELLOW, COLOR_BLACK);	
 }
@@ -328,10 +328,10 @@ void assign_ndir(char *new_dir, int choice)
 	}
 }
 
-bool is_file(char *fname)
+bool is_file(char *src, char *fname)
 {
 	char ccwd[PATH_MAX] = { '\0' };
-	create_path(ccwd, cwd, fname);
+	create_path(ccwd, src, fname);
 	struct stat path_stat;
 	if (stat(ccwd, &path_stat) == 0 && S_ISREG(path_stat.st_mode)) {
 		return true;	
@@ -360,14 +360,14 @@ void print_main()
 		pos_i = 3 + i - top_index;
 		if (highlight == i + 1) {
 			wattron(main_win, A_REVERSE);
-			if (is_file(dirs[i])) {
+			if (is_file(cwd, dirs[i])) {
 				mvwprintw(main_win, pos_i, 1, dirs[i]);
 			} else {
 				colored_print(main_win, pos_i, 1, dirs[i], FOLDER_COLOR);
 			}
 			wattroff(main_win, A_REVERSE);
 		} else {
-			if (is_file(dirs[i])) {
+			if (is_file(cwd, dirs[i])) {
 				mvwprintw(main_win, pos_i, 1, dirs[i]);
 			} else {
 				colored_print(main_win, pos_i, 1, dirs[i], FOLDER_COLOR);
@@ -388,7 +388,7 @@ void print_info()
 	wclear(info_win);
 	
 	/* printing file/dir name in color in info win */	
-	if (is_file(dirs[highlight - 1])) {
+	if (is_file(cwd, dirs[highlight - 1])) {
 		colored_print(info_win, 1, 1, dirs[highlight - 1], INFO_FILE_COLOR);
 	} else {
 		colored_print(info_win, 1, 1, dirs[highlight - 1], INFO_FOLDER_COLOR);
@@ -397,7 +397,7 @@ void print_info()
 	/* adding a line delimeter */
 	mvwhline(info_win, 2, 1, 0, WIDTH / 2 - 2);
 	
-	if (is_file(dirs[highlight - 1])) {
+	if (is_file(cwd, dirs[highlight - 1])) {
 		print_file(dirs[highlight - 1]);
 	} else {
 		print_folder(dirs[highlight - 1]);
@@ -498,6 +498,9 @@ void print_folder(char *fname)
 {
 	char fpath[PATH_MAX] = { '\0' };
 	create_path(fpath, cwd, fname);
+
+	int len = strlen(fpath);
+	fpath[len++] = '/';
 	
 	DIR *fd;
 	struct dirent *fdir;
@@ -524,7 +527,7 @@ void print_folder(char *fname)
 			fd_name = fdir->d_name;
 			// not goin to print . and .. folders in info window
 			if (strcmp(fd_name, ".") != 0 && strcmp(fd_name, "..") != 0) {
-				if (is_file(fd_name)) {
+				if (is_file(fpath, fd_name)) {
 					mvwprintw(info_win, print_y, print_x, "%s\n", fd_name);
 				} else {
 					colored_print(info_win, print_y, print_x, fd_name, FOLDER_COLOR);
