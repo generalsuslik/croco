@@ -29,18 +29,46 @@
 #define CONTROL_HEIGHT HEIGHT / 4 - WIN_MARGIN
 #define CONTROL_WIDTH  WIDTH / 2
 
+#define DIRS_MAX 320000
+#define PATH_MAX 16000
+#define TITLE_MAX 1000
+
+#define d_COLOR_CYAN   1
+#define d_COLOR_GREEN  2
+#define d_COLOR_BLUE   3
+#define d_COLOR_RED    4
+#define d_COLOR_YELLOW 5
+
+#define BINARY_COLOR      d_COLOR_GREEN
+#define FOLDER_COLOR      d_COLOR_BLUE
+#define INFO_FOLDER_COLOR d_COLOR_RED
+#define INFO_FILE_COLOR   d_COLOR_YELLOW
+
 WINDOW *main_win, *info_win, *control_win;
 
-#define DIRS_MAX 320000
+/*
+ 
+   +----------------+--------------+
+   |                |              |  
+   |                |              |
+   |                |   INFO WIN   |
+   |                |              |
+   |    MAIN WIN    |              |
+   |                |              |
+   |                +--------------|
+   |                | CONTROL WIN  |
+   |                |              |
+   +----------------+--------------+
+
+ */
+
 char *dirs[DIRS_MAX];
 int ndirs = 0;
 
-#define PATH_MAX 16000
 char cwd[PATH_MAX]; // current working directory
 int ncwd = 0;
 int top_index = 0;  // cwd[top_index] will be shown on top of the main_win. it's for scrolling
 
-#define TITLE_MAX 1000
 char new_dir[TITLE_MAX];
 
 int startx = 0;
@@ -55,6 +83,8 @@ void init_colors();
 void init_wins();
 void check_win_err();
 void run();
+void process_kup();
+void process_kdown();
 void get_cwd();
 void change_cwd();
 void open_cwd();
@@ -67,6 +97,9 @@ void print_control();
 void create_path(char *fullpath, char *src, char *fname);
 void print_file(char *fname);
 void print_folder(char *fname);
+void create_node(char *nodename);
+void create_file(char *fname);
+void create_folder(char *fname);
 void end();
 
 int main()
@@ -114,17 +147,6 @@ void init()
 	mvprintw(0, 1, "Press any key to start. Press F1 to exit");	
 	refresh();
 }
-
-#define d_COLOR_CYAN   1
-#define d_COLOR_GREEN  2
-#define d_COLOR_BLUE   3
-#define d_COLOR_RED    4
-#define d_COLOR_YELLOW 5
-
-#define BINARY_COLOR      d_COLOR_GREEN
-#define FOLDER_COLOR      d_COLOR_BLUE
-#define INFO_FOLDER_COLOR d_COLOR_RED
-#define INFO_FILE_COLOR   d_COLOR_YELLOW
 
 void init_colors() 
 {
@@ -196,27 +218,11 @@ void run()
 		ch = wgetch(main_win);
 		switch (ch) {	
 			case KEY_UP:
-				if (highlight == 1) {
-					highlight = ndirs;
-					top_index += (HEIGHT - MARGIN_TOP) * (ndirs / (HEIGHT - MARGIN_TOP));
-				} else if (highlight % (HEIGHT - MARGIN_TOP + 1) == 0) {
-					top_index -= (HEIGHT - MARGIN_TOP);
-					--highlight;
-				} else {
-					--highlight;
-				}
+				process_kup();
 				break;
 
 			case KEY_DOWN:
-				if (highlight == ndirs) {
-					highlight = 1;
-					top_index = 0;
-				} else if (highlight % (HEIGHT - MARGIN_TOP) == 0) {
-					++highlight;
-					top_index += (HEIGHT - MARGIN_TOP);
-				} else {
-					++highlight;
-				}
+				process_kdown();
 				break;
 
 			case KEY_F(1):
@@ -236,6 +242,40 @@ void run()
 		if (choice != 0) {
 			break;
 		}
+	}
+}
+
+/*
+ * processing keyup event
+ * for the main win
+ */
+void process_kup() 
+{
+	if (highlight == 1) {
+		highlight = ndirs;
+		top_index += (HEIGHT - MARGIN_TOP) * (ndirs / (HEIGHT - MARGIN_TOP));
+	} else if (highlight % (HEIGHT - MARGIN_TOP + 1) == 0) {
+		top_index -= (HEIGHT - MARGIN_TOP);
+		--highlight;
+	} else {
+		--highlight;
+	}
+}
+
+/*
+ * processing keydown event
+ * for the main win
+ */
+void process_kdown()
+{
+	if (highlight == ndirs) {
+		highlight = 1;
+		top_index = 0;
+	} else if (highlight % (HEIGHT - MARGIN_TOP) == 0) {
+		++highlight;
+		top_index += (HEIGHT - MARGIN_TOP);
+	} else {
+		++highlight;
 	}
 }
 
