@@ -1,7 +1,7 @@
 CC = gcc
 CC_FLAGS = -g -W -Werror -Wall -std=c11 
 
-TARGET = file_manager
+TARGET = fmanager
 
 SRC_DIR = src
 BIN_DIR = bin
