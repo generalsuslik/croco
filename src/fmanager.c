@@ -1,4 +1,7 @@
+#include <ctype.h>
+
 #include "fmanager.h"
+#include "keys.h"
 
 #ifdef _WIN32
 	perror("Not linux os\n");
@@ -11,7 +14,7 @@
 #endif
 
 
-WINDOW *main_win, *linfo_win, *rinfo_win;
+WINDOW *main_win, *linfo_win, *rinfo_win, *control_win;
 /*
   LINFO_WIN:
   linfo_win = left info win
@@ -41,6 +44,8 @@ WINDOW *main_win, *linfo_win, *rinfo_win;
   |           |              |              |
   |           |              |              |
   +-----------+--------------+--------------+
+  |             control_win                 |
+  +-----------------------------------------+
 */
 
 /*
@@ -153,6 +158,11 @@ void init_wins()
 	refresh();
 	wrefresh(rinfo_win);
 
+	control_win = newwin(CONTROL_HEIGHT, CONTROL_WIDTH, MAIN_HEIGHT + CONTROL_MARGIN, START_X);
+	keypad(control_win, FALSE);
+	refresh();
+	wrefresh(control_win);
+
 	check_win_err();
 }
 
@@ -173,6 +183,12 @@ void check_win_err()
 	if (rinfo_win == NULL) {
 		end();
 		fprintf(stderr, "right info win err\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (control_win == NULL) {
+		end();
+		fprintf(stderr, "control win err\n");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -204,8 +220,14 @@ void process_kb()
 				exit(EXIT_SUCCESS);
 				break;
 
-			case 10: // ENTER
+			case KKEY_ENTER: // ENTER
 				choice = highlight;
+				break;
+
+			case ':':
+				waddch(control_win, ':');
+				process_control();
+				wrefresh(control_win);
 				break;
 				
 			default:
@@ -251,6 +273,48 @@ void process_kdown()
 	} else {
 		++highlight;
 	}
+}
+
+void process_control()
+{
+	keypad(control_win, TRUE);
+	
+	int buffer[1024];
+	int buffer_len = 0;
+	
+	int cch;
+	while ((cch = wgetch(control_win)) != KKEY_ENTER) {
+		switch(cch) {
+			case KEY_BACKSPACE:
+				if (buffer_len > 0) {
+					mvwaddch(control_win, 0, --buffer_len + 1, ' ');
+					buffer[buffer_len] = '\0';
+				}
+				break;
+
+			case KEY_F(1):
+				end();
+				exit(EXIT_SUCCESS);
+				break;
+
+			case KKEY_ESC:
+				wclear(control_win);
+				keypad(control_win, FALSE);
+				break;
+
+			default:
+				if (isalnum(cch)) {
+					mvwaddch(control_win, 0, buffer_len + 1, cch);
+					buffer[buffer_len++] = cch;
+				}
+				break;
+		}
+	}
+
+	printw(" %c", buffer[0]);
+	wclear(control_win);
+
+	keypad(control_win, FALSE);
 }
 
 void get_cwd()
@@ -571,6 +635,7 @@ void end()
 	delwin(main_win);
 	delwin(linfo_win);
 	delwin(rinfo_win);
+	delwin(control_win);
 	endwin();
 }
 

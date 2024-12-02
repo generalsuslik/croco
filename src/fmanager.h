@@ -20,13 +20,16 @@
 #define MARGIN_TOP    6
 #define MARGIN_BOTTOM 2
 
-#define ADDITION     WIDTH / 25
-#define MAIN_HEIGHT  HEIGHT - MARGIN_BOTTOM
-#define MAIN_WIDTH   WIDTH / 3 + ADDITION
-#define LEFT_HEIGHT  HEIGHT - MARGIN_BOTTOM
-#define LEFT_WIDTH   WIDTH / 3 - 2 * ADDITION
-#define RIGHT_HEIGHT HEIGHT - MARGIN_BOTTOM
-#define RIGHT_WIDTH  WIDTH / 3 + ADDITION
+#define CONTROL_HEIGHT 1
+#define CONTROL_WIDTH  WIDTH
+#define CONTROL_MARGIN 1
+#define ADDITION       WIDTH / 25
+#define MAIN_HEIGHT    HEIGHT - MARGIN_BOTTOM - CONTROL_HEIGHT
+#define MAIN_WIDTH     WIDTH / 3 + ADDITION 
+#define LEFT_HEIGHT    HEIGHT - MARGIN_BOTTOM - CONTROL_HEIGHT
+#define LEFT_WIDTH     WIDTH / 3 - 2 * ADDITION
+#define RIGHT_HEIGHT   HEIGHT - MARGIN_BOTTOM - CONTROL_HEIGHT
+#define RIGHT_WIDTH    WIDTH / 3 + ADDITION
 
 /*
  * max amount of dirs in cwd
@@ -58,6 +61,7 @@ void check_win_err();
 void process_kb();
 void process_kup();
 void process_kdown();
+void process_control();
 void get_cwd();
 void change_cwd(const char *new_dir); 
 void open_wd(const char *wd, char **dirs_arr, size_t *ndirs_arr);
