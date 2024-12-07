@@ -1,5 +1,5 @@
 CC = gcc
-CC_FLAGS = -g -W -Werror -Wall -std=c11 
+CC_FLAGS = -g -W -Werror -Wall -Wpedantic -std=c11 
 
 TARGET = fmanager
 

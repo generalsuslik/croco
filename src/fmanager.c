@@ -1,7 +1,4 @@
-#include <ctype.h>
-
-#include "fmanager.h"
-#include "keys.h"
+#include "../inc/fmanager.h"
 
 #ifdef _WIN32
 	perror("Not linux os\n");
@@ -220,16 +217,16 @@ void process_kb()
 				exit(EXIT_SUCCESS);
 				break;
 
-			case KKEY_ENTER: // ENTER
+			case KKEY_ENTER: 
 				choice = highlight;
 				break;
-
+#if 0	
 			case ':':
 				waddch(control_win, ':');
 				process_control();
 				wrefresh(control_win);
 				break;
-				
+#endif		
 			default:
 				refresh();
 				break;
@@ -279,8 +276,8 @@ void process_control()
 {
 	keypad(control_win, TRUE);
 	
-	int buffer[1024];
-	int buffer_len = 0;
+	char   buffer[1024];
+	size_t buffer_len = 0;
 	
 	int cch;
 	while ((cch = wgetch(control_win)) != KKEY_ENTER) {
@@ -303,15 +300,16 @@ void process_control()
 				break;
 
 			default:
-				if (isalnum(cch)) {
+				if (isalnum(cch) || cch == ' ' || cch == '.' || cch == '/') {
 					mvwaddch(control_win, 0, buffer_len + 1, cch);
-					buffer[buffer_len++] = cch;
+					assert(cch < CHAR_MAX);
+					buffer[buffer_len++] = (char)cch;
 				}
 				break;
 		}
 	}
 
-	printw(" %c", buffer[0]);
+	process_command(cwd, buffer);
 	wclear(control_win);
 
 	keypad(control_win, FALSE);
@@ -367,7 +365,8 @@ void open_wd(const char *wd, char **dirs_arr, size_t *ndirs_arr)
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
 			refresh();
-			dirs_arr[(*ndirs_arr)++] = dir->d_name;
+			dirs_arr[*ndirs_arr] = malloc(PATH_MAX * sizeof(char));
+			strcpy(dirs_arr[(*ndirs_arr)++], dir->d_name);
 		}
 	} else {
 		end();
@@ -375,6 +374,8 @@ void open_wd(const char *wd, char **dirs_arr, size_t *ndirs_arr)
 		fprintf(stderr, "%s\n", wd);
 		exit(EXIT_FAILURE);
 	}
+
+	closedir(d);
 
 	refresh();
 }
@@ -476,7 +477,6 @@ void print_main()
 	}
 
 	wrefresh(main_win);
-
 }
 
 /*
