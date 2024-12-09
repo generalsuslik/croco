@@ -220,13 +220,13 @@ void process_kb()
 			case KKEY_ENTER: 
 				choice = highlight;
 				break;
-#if 0	
+			
 			case ':':
 				waddch(control_win, ':');
 				process_control();
 				wrefresh(control_win);
 				break;
-#endif		
+			
 			default:
 				refresh();
 				break;
@@ -297,7 +297,7 @@ void process_control()
 			case KKEY_ESC:
 				wclear(control_win);
 				keypad(control_win, FALSE);
-				break;
+				return;
 
 			default:
 				if (isalnum(cch) || cch == ' ' || cch == '.' || cch == '/') {
@@ -309,10 +309,18 @@ void process_control()
 		}
 	}
 
+	buffer[buffer_len] = '\0';
 	process_command(cwd, buffer);
+	
+	// updating arrays of dirs & files
+	open_wd(cwd, dirs, &ndirs);
+	open_wd(prev_cwd, prev_dirs, &nprev_dirs);
+	
+	print_main();
 	wclear(control_win);
 
 	keypad(control_win, FALSE);
+
 }
 
 void get_cwd()
@@ -352,6 +360,9 @@ void change_cwd(const char *new_dir)
 	upd_prev_cwd(cwd);
 }
 
+/*
+ * adds dir & file 's names to dirs_arr
+ */
 void open_wd(const char *wd, char **dirs_arr, size_t *ndirs_arr)
 {
 	for (size_t i = 0; i < *ndirs_arr; ++i) {

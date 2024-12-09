@@ -10,7 +10,7 @@
  */
 void process_command(const char *wd, const char *buffer)
 {
-	char *copy_wd = NULL;// = strdup(wd);
+	char copy_wd[1024];// = strdup(wd);
 	strcpy(copy_wd, wd);
 
 	size_t command_len = 0; // length of **command array
@@ -35,7 +35,10 @@ void process_command(const char *wd, const char *buffer)
 		if (path[n - 1] == '/') {
 			remove_dir(path);
 		} else {
-			remove_file(path);
+			int err = remove_file(path);
+			if (err) {
+				exit(EXIT_FAILURE);
+			}
 		}
 	}
 
@@ -133,30 +136,26 @@ int remove_file(const char *path)
 
 char **parse_command(const char *buffer, size_t *count)
 {
-	char *buffer_copy = NULL;// = strdup(buffer);
+	char buffer_copy[1024];// = strdup(buffer);
 	strcpy(buffer_copy, buffer);
-	if (buffer_copy == NULL) {
-		return NULL;
-	}
 
 	size_t capacity = 0;
 	size_t size     = 0;
 	char **res      = malloc(capacity * sizeof(char *));
 	if (res == NULL) {
-		free(buffer_copy);
 		return NULL;
 	}
 	
 	char *token = strtok(buffer_copy, " ");
 	while (token != NULL) {
 		//res[size] = strdup(token);
+		res[size] = (char *)malloc(strlen(token) * sizeof(char));
 		strcpy(res[size], token);
 		if (res[size] == NULL) {
 			for (size_t i = 0; i < size; ++i) {
 				free(res[i]);
 			}
 			free(res);
-			free(buffer_copy);
 			return NULL;
 		}
 		++size;
@@ -165,7 +164,6 @@ char **parse_command(const char *buffer, size_t *count)
 
 	*count = size;
 	res = realloc(res, size * sizeof(char *));
-	free(buffer_copy);
 	return res;
 }
 
