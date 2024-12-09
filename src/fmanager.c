@@ -223,6 +223,7 @@ void process_kb()
 			
 			case ':':
 				waddch(control_win, ':');
+				print_cursor(control_win, 0, 1);
 				process_control();
 				wrefresh(control_win);
 				break;
