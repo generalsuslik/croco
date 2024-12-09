@@ -284,7 +284,9 @@ void process_control()
 		switch(cch) {
 			case KEY_BACKSPACE:
 				if (buffer_len > 0) {
+					mvwaddch(control_win, 0, buffer_len + 1, ' ');
 					mvwaddch(control_win, 0, --buffer_len + 1, ' ');
+					print_cursor(control_win, 0, buffer_len + 1);
 					buffer[buffer_len] = '\0';
 				}
 				break;
@@ -299,9 +301,20 @@ void process_control()
 				keypad(control_win, FALSE);
 				return;
 
+			case KEY_UP:
+				wclear(control_win);
+				keypad(control_win, FALSE);
+				return;
+
+			case KEY_DOWN:
+				wclear(control_win);
+				keypad(control_win, FALSE);
+				return;
+
 			default:
 				if (isalnum(cch) || cch == ' ' || cch == '.' || cch == '/') {
 					mvwaddch(control_win, 0, buffer_len + 1, cch);
+					print_cursor(control_win, 0, buffer_len + 2);
 					assert(cch < CHAR_MAX);
 					buffer[buffer_len++] = (char)cch;
 				}
@@ -639,6 +652,13 @@ void print_folder(char *fname)
 
 		closedir(fd);
 	}
+}
+
+void print_cursor(WINDOW *win, int y, int x)
+{
+	wattron(win, A_REVERSE);
+	mvwaddch(win, y, x, ' ');
+	wattroff(win, A_REVERSE);				
 }
 
 void end()

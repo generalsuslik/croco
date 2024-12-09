@@ -9,3 +9,22 @@ To run:
 ```bash
 make && make run
 ```
+
+## Controls
+* Vertical arrow keys to switch throw dirs
+* commands:
+	* add file/folder
+		```
+		:a <file>
+		```
+		```
+		:a <folder>/
+		```
+	* remove file/folder
+		```
+		:r <file>
+		```
+		```
+		:r <folder>/
+		```
+

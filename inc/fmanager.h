@@ -84,6 +84,7 @@ void print_rinfo();
 void colored_print(WINDOW *win, int y, int x, char *text, int color);
 void print_file(char *fname);
 void print_folder(char *fname);
+void print_cursor(WINDOW* win, int y, int x);
 void end();
 
 #endif // FMANAGER_H
