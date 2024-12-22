@@ -10,7 +10,6 @@
 	exit(EXIT_FAILURE);
 #endif
 
-
 WINDOW *main_win, *linfo_win, *rinfo_win, *control_win;
 /*
   LINFO_WIN:
@@ -100,6 +99,14 @@ int main()
 		refresh();
 	}
 
+	for (size_t i = 0; i < ndirs; ++i) {
+		free(dirs[i]);
+	}
+
+	for (size_t i = 0; i < nprev_dirs; ++i) {
+		free(prev_dirs[i]);
+	}
+	
 	end();
 	return 0;
 }
@@ -289,6 +296,18 @@ void process_control()
 					mvwaddch(control_win, 0, --buffer_len + 1, ' ');
 					print_cursor(control_win, 0, buffer_len + 1);
 					buffer[buffer_len] = '\0';
+				} else {
+					/* 
+					 * removing ":" from the beginning of the control panel
+					 * on backspace 
+					 */
+					mvwaddch(control_win, 0, buffer_len + 1, ' ');
+					mvwaddch(control_win, 0, --buffer_len + 1, ' ');
+					print_cursor(control_win, 0, buffer_len + 1);
+					mvwaddch(control_win, 0, buffer_len + 1, ' ');
+					wclear(control_win);
+					keypad(control_win, FALSE);
+					return;
 				}
 				break;
 
@@ -324,6 +343,7 @@ void process_control()
 	}
 
 	buffer[buffer_len] = '\0';
+
 	process_command(cwd, buffer);
 	
 	// updating arrays of dirs & files
@@ -341,13 +361,11 @@ void get_cwd()
 {
 	if (getcwd(cwd, PATH_MAX) == NULL) {
 		end();
-		perror("getcwd error\n");
+		fprintf(stderr, "getcwd error\n");
 		exit(EXIT_FAILURE);
 	}
-
-	while (cwd[ncwd] != '\0') {
-		++ncwd;
-	}
+	
+	ncwd = strlen(cwd);
 
 	cwd[ncwd++] = '/';
 	cwd[ncwd] = '\0';
@@ -380,7 +398,7 @@ void change_cwd(const char *new_dir)
 void open_wd(const char *wd, char **dirs_arr, size_t *ndirs_arr)
 {
 	for (size_t i = 0; i < *ndirs_arr; ++i) {
-		memset(dirs_arr[i], '\0', strlen(dirs_arr[i]));
+		free(dirs_arr[i]);
 	}
 	*ndirs_arr = 0;
 
