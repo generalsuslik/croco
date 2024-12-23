@@ -1,15 +1,7 @@
 #ifndef COMMANDS_H
 #define COMMANDS_H
 
-#include <dirent.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-typedef enum {
+typedef enum operation {
 	ADD,
 	REMOVE,
 	FIND,
