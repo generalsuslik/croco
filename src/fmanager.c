@@ -1,4 +1,21 @@
+#include <assert.h>
+#include <ctype.h>
+#include <dirent.h>
+#include <limits.h>
+#include <ncurses.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "../inc/fmanager.h"
+
+#include "../inc/commands.h"
+#include "../inc/keys.h"
+#include "../inc/util.h"
 
 #ifdef _WIN32
 	perror("Not linux os\n");
@@ -84,19 +101,17 @@ int main()
 	open_wd(prev_cwd, prev_dirs, &nprev_dirs);
 	
 	print_main();
+	print_linfo();
+	print_rinfo();
 	while (1) {
 		process_kb();
 		
-		assign_ndir(new_dir, --choice);
+		assign_ndir(new_dir, dirs[--choice]);
 		change_cwd(new_dir);
-		open_wd(cwd, dirs, &ndirs);
-		open_wd(prev_cwd, prev_dirs, &nprev_dirs);
-
 		highlight = 1;
 		choice = 0;
 		print_main();
-	
-		refresh();
+		print_linfo();
 	}
 
 	for (size_t i = 0; i < ndirs; ++i) {
@@ -147,24 +162,20 @@ void init_wins()
 	main_win = newwin(MAIN_HEIGHT, MAIN_WIDTH, START_Y, START_X + LEFT_WIDTH);
 	keypad(main_win, TRUE);
 	box(main_win, 0, 0);
-	refresh();
 	wrefresh(main_win);
 
 	linfo_win = newwin(LEFT_HEIGHT, LEFT_WIDTH, START_Y, START_X);
 	keypad(linfo_win, FALSE);
 	box(linfo_win, 0, 0);
-	refresh();
 	wrefresh(linfo_win);
 
 	rinfo_win = newwin(RIGHT_HEIGHT, RIGHT_WIDTH, START_Y, START_X + MAIN_WIDTH + LEFT_WIDTH);
 	keypad(rinfo_win, TRUE);
 	box(rinfo_win, 0, 0);
-	refresh();
 	wrefresh(rinfo_win);
 
 	control_win = newwin(CONTROL_HEIGHT, CONTROL_WIDTH, MAIN_HEIGHT + CONTROL_MARGIN, START_X);
 	keypad(control_win, FALSE);
-	refresh();
 	wrefresh(control_win);
 
 	check_win_err();
@@ -205,8 +216,7 @@ void check_win_err()
 void process_kb()
 {
 	while (1) {
-		print_main();
-		print_linfo();
+		update_main(highlight);
 		print_rinfo();
 
 		ch = wgetch(main_win);
@@ -215,8 +225,32 @@ void process_kb()
 				process_kup();
 				break;
 
+			case 'k':
+				process_kup();
+				break;
+
 			case KEY_DOWN:
 				process_kdown();
+				break;
+
+			case 'j':
+				process_kdown();
+				break;
+
+			case KEY_LEFT:
+				process_kleft();
+				break;
+
+			case 'h':
+				process_kleft();
+				break;
+
+			case KEY_RIGHT:
+				process_kright();
+				break;
+
+			case 'l':
+				process_kright();
 				break;
 			
 			case KEY_F(1):
@@ -236,7 +270,6 @@ void process_kb()
 				break;
 			
 			default:
-				refresh();
 				break;
 		}
 
@@ -254,9 +287,10 @@ void process_kup()
 {
 	if (highlight == 1) {
 		highlight = ndirs;
-		top_index += (HEIGHT - MARGIN_TOP) * (ndirs / (HEIGHT - MARGIN_TOP));
-	} else if (highlight % (HEIGHT - MARGIN_TOP + 1) == 0) {
-		top_index -= (HEIGHT - MARGIN_TOP);
+		top_index += (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT) * (ndirs / (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT));
+		print_main();
+	} else if (highlight % (HEIGHT - MARGIN_TOP) == 0) {
+		top_index -= (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT);
 		--highlight;
 	} else {
 		--highlight;
@@ -272,12 +306,36 @@ void process_kdown()
 	if (highlight == ndirs) {
 		highlight = 1;
 		top_index = 0;
-	} else if (highlight % (HEIGHT - MARGIN_TOP) == 0) {
+		print_main();
+	} else if (highlight % (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT) == 0) {
 		++highlight;
-		top_index += (HEIGHT - MARGIN_TOP);
+		top_index += (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT);
 	} else {
 		++highlight;
 	}
+}
+
+void process_kleft()
+{
+	strcpy(new_dir, "..\0");
+	nnew_dir = 2;
+	change_cwd(new_dir);
+}
+
+void process_kright() 
+{
+	if (is_file(cwd, dirs[highlight - 1])) {
+		return;
+	}
+	const char *dir = dirs[highlight - 1];
+	const size_t len = strlen(dir);
+
+	strcpy(new_dir, cwd);
+	strcpy(new_dir, dir);
+
+	nnew_dir = ncwd + len;
+
+	change_cwd(new_dir);
 }
 
 void process_control()
@@ -382,14 +440,16 @@ void change_cwd(const char *new_dir)
 	if (strcmp(new_dir, "..") == 0) {
 		strcpy(cwd, prev_cwd);
 		upd_prev_cwd(cwd);
-		return;
+	} else {
+		strcat(cwd, new_dir);
+		ncwd = strlen(cwd);
+		cwd[ncwd++] = '/';
+		cwd[ncwd] = '\0';
+		upd_prev_cwd(cwd);
 	}
-
-	strcat(cwd, new_dir);
-	ncwd = strlen(cwd);
-	cwd[ncwd++] = '/';
-	cwd[ncwd] = '\0';
-	upd_prev_cwd(cwd);
+	
+	open_wd(cwd, dirs, &ndirs);
+	open_wd(prev_cwd, prev_dirs, &nprev_dirs);
 }
 
 /*
@@ -407,7 +467,6 @@ void open_wd(const char *wd, char **dirs_arr, size_t *ndirs_arr)
 	struct dirent *dir;
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
-			refresh();
 			dirs_arr[*ndirs_arr] = malloc(PATH_MAX * sizeof(char));
 			strcpy(dirs_arr[(*ndirs_arr)++], dir->d_name);
 		}
@@ -420,7 +479,8 @@ void open_wd(const char *wd, char **dirs_arr, size_t *ndirs_arr)
 
 	closedir(d);
 
-	refresh();
+	sort_dirs(dirs_arr, *ndirs_arr);
+
 }
 
 /*
@@ -439,27 +499,24 @@ void upd_prev_cwd(char *wd)
 			prev_slash = last_slash;
 			last_slash = i;
 		}
-	}
-
+	}	
 	nprev_cwd = prev_slash + 1;
-	for (size_t i = 0; i <= nprev_cwd; ++i) {
-		prev_cwd[i] = wd[i];
-	}
+	
+	strncpy(prev_cwd, wd, nprev_cwd);
 	prev_cwd[nprev_cwd] = '\0';
 }
 
 /*
  * assignes chosen option to a new_dir
  */
-void assign_ndir(char *new_dir, int choice)
+void assign_ndir(char *new_dir, const char *node)
 {
 	memset(new_dir, '\0', nnew_dir);	
 	
 	nnew_dir = 0;
-	while (dirs[choice][nnew_dir] != '\0') {
-		new_dir[nnew_dir] = dirs[choice][nnew_dir];
-		++nnew_dir;
-	}
+	strcpy(new_dir, node);
+	nnew_dir = strlen(node);
+	new_dir[nnew_dir] = '\0';
 }
 
 bool is_file(char *src, char *fname)
@@ -498,7 +555,6 @@ void print_main()
 
 	/* adding a line delimeter */
 	mvwhline(main_win, 2, 0, 0, WIDTH / 2);
-
 	size_t pos_i = 0;
 	for (size_t i = top_index; i < ndirs; ++i) {
 		pos_i = 3 + i - top_index;
@@ -518,8 +574,32 @@ void print_main()
 			}
 		}
 	}
+	refresh_win(main_win);
+}
 
-	wrefresh(main_win);
+void update_main(size_t highlight)
+{
+	size_t pos_i = 0;
+	for (size_t i = top_index; i < ndirs; ++i) {
+		pos_i = 3 + i - top_index;
+		if (highlight == i + 1) {
+			wattron(main_win, A_REVERSE);
+			if (is_file(cwd, dirs[i])) {
+				mvwprintw(main_win, pos_i, 1, dirs[i]);
+			} else {
+				colored_print(main_win, pos_i, 1, dirs[i], FOLDER_COLOR);
+			}
+			wattroff(main_win, A_REVERSE);
+		} else {
+			if (is_file(cwd, dirs[i])) {
+				mvwprintw(main_win, pos_i, 1, dirs[i]);
+			} else {
+				colored_print(main_win, pos_i, 1, dirs[i], FOLDER_COLOR);
+			}
+		}
+	}
+	
+	refresh_win(main_win);
 }
 
 /*
@@ -532,7 +612,8 @@ void print_linfo()
 	
 	/* printing prev dir name */
 	colored_print(linfo_win, 1, 1, prev_cwd, FOLDER_COLOR);
-	
+	refresh_win(linfo_win);
+
 	/* adding line delimeter */
 	mvwhline(linfo_win, 2, 1, 0, LEFT_WIDTH);
 
@@ -543,8 +624,7 @@ void print_linfo()
 			colored_print(linfo_win, i + 3, 1, prev_dirs[i], FOLDER_COLOR);
 		}
 	}
-
-	wrefresh(linfo_win);	
+	refresh_win(linfo_win);
 }
 
 /*
@@ -558,9 +638,9 @@ void print_rinfo()
 	
 	/* printing file/dir name in color in info win */	
 	if (is_file(cwd, dirs[highlight - 1])) {
-		colored_print(rinfo_win, 1, 1, dirs[highlight - 1], INFO_FILE_COLOR);
+		colored_print(rinfo_win, 2, 2, dirs[highlight - 1], INFO_FILE_COLOR);
 	} else {
-		colored_print(rinfo_win, 1, 1, dirs[highlight - 1], INFO_FOLDER_COLOR);
+		colored_print(rinfo_win, 2, 2, dirs[highlight - 1], INFO_FOLDER_COLOR);
 	}
 	
 	/* adding a line delimeter */
@@ -571,18 +651,7 @@ void print_rinfo()
 	} else {
 		print_folder(dirs[highlight - 1]);
 	}
-
-	wrefresh(rinfo_win);
-}
-
-void colored_print(WINDOW *win, int y, int x, char *text, int color)
-{
-	wattron(win, COLOR_PAIR(color));
-	mvwprintw(win, y, x, "%s\n", text);
-	wattroff(win, COLOR_PAIR(color));
-	box(win, 0, 0);
-	wrefresh(main_win);
-	refresh();
+	refresh_win(rinfo_win);	
 }
 
 /*
@@ -605,7 +674,7 @@ void print_file(char *fname)
 	int cur_x;
 
 	int print_y = 3;
-	int print_x = 1;
+	int print_x = 2;
 	wmove(rinfo_win, print_y, print_x);
 	while ((ch = fgetc(f_ptr)) != EOF) {
 		getyx(rinfo_win, cur_y, cur_x);
@@ -619,9 +688,7 @@ void print_file(char *fname)
 
 		wprintw(rinfo_win, "%c", ch);
 	}
-
 	fclose(f_ptr);
-	box(rinfo_win, 0, 0);
 }
 
 /*
@@ -668,9 +735,9 @@ void print_folder(char *fname)
 				}
 			}
 		}
-
 		closedir(fd);
 	}
+	refresh_win(rinfo_win);
 }
 
 void print_cursor(WINDOW *win, int y, int x)
@@ -678,6 +745,19 @@ void print_cursor(WINDOW *win, int y, int x)
 	wattron(win, A_REVERSE);
 	mvwaddch(win, y, x, ' ');
 	wattroff(win, A_REVERSE);				
+}
+
+void colored_print(WINDOW *win, int y, int x, char *text, int color)
+{
+	wattron(win, COLOR_PAIR(color));
+	mvwprintw(win, y, x, "%s\n", text);
+	wattroff(win, COLOR_PAIR(color));
+}
+
+void refresh_win(WINDOW *win) {
+	box(win, 0, 0);
+	wrefresh(win);
+	refresh();
 }
 
 void end()

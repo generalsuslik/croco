@@ -1,23 +1,6 @@
 #ifndef FMANAGER_H
 #define FMANAGER_H
 
-#include <assert.h>
-#include <ctype.h>
-#include <dirent.h>
-#include <limits.h>
-#include <ncurses.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include "../inc/commands.h"
-#include "../inc/keys.h"
-
-
 #define WIDTH getmaxx(stdscr)
 #define HEIGHT getmaxy(stdscr)
 
@@ -49,11 +32,21 @@
 
 #define COMMAND_MAX 128
 
+#if 0
 #define d_COLOR_CYAN   1
 #define d_COLOR_GREEN  2
 #define d_COLOR_BLUE   3
 #define d_COLOR_RED    4
 #define d_COLOR_YELLOW 5
+#endif
+
+typedef enum colors {
+	d_COLOR_CYAN,
+	d_COLOR_GREEN,
+	d_COLOR_BLUE,
+	d_COLOR_RED,
+	d_COLOR_YELLOW,
+} colors_t;
 
 #define BINARY_COLOR      d_COLOR_GREEN
 #define FOLDER_COLOR      d_COLOR_BLUE
@@ -70,21 +63,25 @@ void check_win_err();
 void process_kb();
 void process_kup();
 void process_kdown();
+void process_kleft();
+void process_kright();
 void process_control();
 void get_cwd();
 void change_cwd(const char *new_dir); 
 void open_wd(const char *wd, char **dirs_arr, size_t *ndirs_arr);
 void upd_prev_cwd(char *wd);
-void assign_ndir(char *new_dir, int choice);
+void assign_ndir(char *new_dir, const char *node);
 bool is_file(char *src, char *fname);
 void create_path(char *fullpath, char *src, char *fname);
 void print_main();
+void update_main(size_t highlight);
 void print_linfo();
 void print_rinfo();
-void colored_print(WINDOW *win, int y, int x, char *text, int color);
 void print_file(char *fname);
 void print_folder(char *fname);
 void print_cursor(WINDOW* win, int y, int x);
+void colored_print(WINDOW *win, int y, int x, char *text, int color);
+void refresh_win(WINDOW *win);
 void end();
 
 #endif // FMANAGER_H
