@@ -1,7 +1,7 @@
 CC = gcc
 CC_FLAGS = -g -W -Werror -Wall -Wpedantic -std=c11 
 
-TARGET = fmanager
+TARGET = croco
 
 SRC_DIR = src
 BIN_DIR = bin

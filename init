@@ -1,4 +1,47 @@
-#!/bin/bash/
+#!/bin/bash
 
-mkdir bin
+bin_dir="bin"
+app_name="fmanager"
+
+if [ -d "$bin_dir" ]; then
+	echo "Project bin directory exists"
+else 
+	echo "Project bin directory does not exist. Creating it..."
+	mkdir $bin_dir
+	echo "Project bin directory created."
+fi
+
+echo "Making the project with make"
+make
+
+attempts=0
+max_attempts=3
+while ((attempts < max_attempts)); do
+	read -p "Do you want to add croco to your /bin/ folder (y/N): " ans
+	case $ans in
+		[yY])
+			sudo cp bin/$(app_name) /usr/bin/
+			break
+			;;
+
+		[nN])
+			break
+			;;
+
+		*)
+			echo -e "\e[31mInvalid input. Please try again\e[0m"
+			;;
+	esac
+
+	((++attempts))
+done
+
+if (( attempts == max_attempts )); then
+	echo -e "\e[31mWrong inputs: 3. Aborting...\e[0m"
+	exit 1
+fi
+
+echo "Continuing..."
+
+
 
