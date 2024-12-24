@@ -1,17 +1,20 @@
-# file-manager
+<div align="center">
+	<img src="assets/croco.png" alt="Croco logo" width="20%"/>
+</div>
 
-### vim-like file manager written in c
+## croco - 🐊Efficient terminal file manager  
 
-To run:
+🖥️ Start script for smart initialization:
 ```bash
 ./init
 ```
+Or you can just make it 🤓
 ```bash
 make && make run
 ```
 
 ## Controls
-* Vertical arrow keys to switch throw dirs
+* Arrow keys to navigate through dirs
 * commands:
 	* add file/folder
 		```
