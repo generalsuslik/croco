@@ -216,6 +216,7 @@ void check_win_err()
 void process_kb()
 {
 	while (1) {
+		print_linfo();
 		update_main(highlight);
 		print_rinfo();
 
@@ -446,6 +447,12 @@ void change_cwd(char *cwd, const char *new_dir)
 		return;
 	}
 
+	// if we're already in / , we can't go 
+	// further backwards
+	if (strcmp(cwd, "/") == 0 && strcmp(new_dir, "..") == 0) {
+		return;
+	}
+
 	if (strcmp(new_dir, "..") == 0) {
 		strcpy(cwd, prev_cwd);
 		upd_prev_cwd(cwd);
@@ -470,6 +477,10 @@ void open_wd(const char *wd, char **dirs_arr, size_t *ndirs_arr)
 		free(dirs_arr[i]);
 	}
 	*ndirs_arr = 0;
+
+	if (strlen(wd) == 0) {
+		return;
+	}
 
 	DIR *d;
 	d = opendir(wd);
@@ -498,21 +509,26 @@ void open_wd(const char *wd, char **dirs_arr, size_t *ndirs_arr)
  */
 void upd_prev_cwd(char *wd) 
 {
-	size_t n = strlen(wd);
+	if (strcmp(wd, "/") == 0) {
+		memset(prev_cwd, '\0', nprev_cwd);
+		nprev_cwd = 0;
+	} else {
+		size_t n = strlen(wd);
+
+		int last_slash = 0;
+		int prev_slash = 0;
 	
-	int last_slash = 0;
-	int prev_slash = 0;
+		for (size_t i = 0; i < n; ++i) {
+			if (wd[i] == '/') {
+				prev_slash = last_slash;
+				last_slash = i;
+			}
+		}	
+		nprev_cwd = prev_slash + 1;
 	
-	for (size_t i = 0; i < n; ++i) {
-		if (wd[i] == '/') {
-			prev_slash = last_slash;
-			last_slash = i;
-		}
-	}	
-	nprev_cwd = prev_slash + 1;
-	
-	strncpy(prev_cwd, wd, nprev_cwd);
-	prev_cwd[nprev_cwd] = '\0';
+		strncpy(prev_cwd, wd, nprev_cwd);
+		prev_cwd[nprev_cwd] = '\0';
+	}
 }
 
 /*
@@ -560,10 +576,11 @@ void print_main()
 	wclear(main_win);
 
 	/* printing colored cwd */
-	colored_print(main_win, 1, 0, cwd, d_COLOR_CYAN);
-
+	colored_print(main_win, 1, 1, cwd, d_COLOR_CYAN);
+	
 	/* adding a line delimeter */
 	mvwhline(main_win, 2, 0, 0, WIDTH / 2);
+	
 	size_t pos_i = 0;
 	for (size_t i = top_index; i < ndirs; ++i) {
 		pos_i = 3 + i - top_index;
@@ -619,12 +636,12 @@ void print_linfo()
 {
 	wclear(linfo_win);
 	
-	/* printing prev dir name */
-	colored_print(linfo_win, 1, 1, prev_cwd, FOLDER_COLOR);
-	refresh_win(linfo_win);
-
 	/* adding line delimeter */
 	mvwhline(linfo_win, 2, 1, 0, LEFT_WIDTH);
+	
+	/* printing prev dir name */
+	colored_print(linfo_win, 1, 1, prev_cwd, FOLDER_COLOR);
+
 
 	for (size_t i = 0; i < nprev_dirs; ++i) {
 		if (is_file(prev_cwd, prev_dirs[i])) {

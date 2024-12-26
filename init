@@ -1,7 +1,7 @@
 #!/bin/bash
 
-bin_dir="bin"
-app_name="fmanager"
+bin_dir=bin
+app_name=croco
 
 if [ -d "$bin_dir" ]; then
 	echo "Project bin directory exists"
@@ -20,7 +20,7 @@ while ((attempts < max_attempts)); do
 	read -p "Do you want to add croco to your /bin/ folder (y/N): " ans
 	case $ans in
 		[yY])
-			sudo cp bin/$(app_name) /usr/bin/
+			sudo cp "$bin_dir/$app_name" /usr/bin/
 			break
 			;;
 
