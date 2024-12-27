@@ -25,3 +25,8 @@ int compare(const void *arg1, const void *arg2)
 	return strcasecmp(str1, str2);
 }
 
+inline size_t min(size_t a, size_t b) 
+{
+	return a > b ? b : a;
+}
+

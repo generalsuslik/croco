@@ -123,6 +123,7 @@ int main(int argc, char *argv[])
 	}
 	
 	end();
+
 	return 0;
 }
 
@@ -216,7 +217,6 @@ void check_win_err()
 void process_kb()
 {
 	while (1) {
-		print_linfo();
 		update_main(highlight);
 		print_rinfo();
 
@@ -259,7 +259,7 @@ void process_kb()
 				exit(EXIT_SUCCESS);
 				break;
 
-			case KKEY_ENTER: 
+			case KKEY_ENTER:
 				choice = highlight;
 				break;
 			
@@ -286,12 +286,24 @@ void process_kb()
  */
 void process_kup()
 {
+#if 0
 	if (highlight == 1) {
 		highlight = ndirs;
-		top_index += (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT) * (ndirs / (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT));
+		top_index = (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT) * (ndirs / (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT));
 		print_main();
 	} else if (highlight % (HEIGHT - MARGIN_TOP) == 0) {
 		top_index -= (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT);
+		--highlight;
+	} else {
+		--highlight;
+	}
+#endif
+	if (highlight == 1) {
+		highlight = ndirs;
+		top_index = MAIN_HEIGHT * (ndirs / MAIN_HEIGHT);
+		print_main();
+	} else if (highlight % (MAIN_HEIGHT) == 1) {
+		top_index -= MAIN_HEIGHT;
 		--highlight;
 		print_main();
 	} else {
@@ -584,7 +596,7 @@ void print_main()
 	mvwhline(main_win, 2, 0, 0, WIDTH / 2);
 	
 	size_t pos_i = 0;
-	for (size_t i = top_index; i < ndirs; ++i) {
+	for (size_t i = top_index; i < min(ndirs, top_index + MAIN_HEIGHT); ++i) {
 		pos_i = 3 + i - top_index;
 		if (highlight == i + 1) {
 			wattron(main_win, A_REVERSE);
@@ -608,8 +620,9 @@ void print_main()
 void update_main(size_t highlight)
 {
 	size_t pos_i = 0;
-	for (size_t i = top_index; i < ndirs; ++i) {
+	for (size_t i = top_index; i < min(ndirs, top_index + HEIGHT); ++i) {
 		pos_i = 3 + i - top_index;
+		
 		if (highlight == i + 1) {
 			wattron(main_win, A_REVERSE);
 			if (is_file(cwd, dirs[i])) {
@@ -626,7 +639,6 @@ void update_main(size_t highlight)
 			}
 		}
 	}
-	
 	refresh_win(main_win);
 }
 
@@ -666,9 +678,9 @@ void print_rinfo()
 	
 	/* printing file/dir name in color in info win */	
 	if (is_file(cwd, dirs[highlight - 1])) {
-		colored_print(rinfo_win, 1, 0, dirs[highlight - 1], INFO_FILE_COLOR);
+		colored_print(rinfo_win, 1, 1, dirs[highlight - 1], INFO_FILE_COLOR);
 	} else {
-		colored_print(rinfo_win, 1, 0, dirs[highlight - 1], INFO_FOLDER_COLOR);
+		colored_print(rinfo_win, 1, 1, dirs[highlight - 1], INFO_FOLDER_COLOR);
 	}
 	
 	/* adding a line delimeter */
