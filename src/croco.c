@@ -293,6 +293,7 @@ void process_kup()
 	} else if (highlight % (HEIGHT - MARGIN_TOP) == 0) {
 		top_index -= (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT);
 		--highlight;
+		print_main();
 	} else {
 		--highlight;
 	}
@@ -311,6 +312,7 @@ void process_kdown()
 	} else if (highlight % (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT) == 0) {
 		++highlight;
 		top_index += (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT);
+		print_main();
 	} else {
 		++highlight;
 	}
