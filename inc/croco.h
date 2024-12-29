@@ -29,16 +29,9 @@
 #define DIRS_MAX  320000
 #define PATH_MAX  16000
 #define TITLE_MAX 1000
+#define NODE_INFO_MAX 128
 
 #define COMMAND_MAX 128
-
-#if 0
-#define d_COLOR_CYAN   1
-#define d_COLOR_GREEN  2
-#define d_COLOR_BLUE   3
-#define d_COLOR_RED    4
-#define d_COLOR_YELLOW 5
-#endif
 
 typedef enum colors {
 	d_COLOR_CYAN,
@@ -52,6 +45,11 @@ typedef enum colors {
 #define FOLDER_COLOR      d_COLOR_BLUE
 #define INFO_FOLDER_COLOR d_COLOR_RED
 #define INFO_FILE_COLOR   d_COLOR_YELLOW
+
+#define PERMISSION_MARKER -1
+#define PERMISSION_USER   d_COLOR_GREEN
+#define PERMISSION_GROUP  d_COLOR_BLUE
+#define PERMISSION_OTHER  d_COLOR_YELLOW
 
 #define START_X 0
 #define START_Y 1
@@ -71,8 +69,6 @@ void change_cwd(char *cwd, const char *new_dir);
 void open_wd(const char *wd, char **dirs_arr, size_t *ndirs_arr);
 void upd_prev_cwd(char *wd);
 void assign_ndir(char *new_dir, const char *node);
-bool is_file(char *src, char *fname);
-void create_path(char *fullpath, char *src, char *fname);
 void print_main();
 void update_main(size_t highlight);
 void print_linfo();

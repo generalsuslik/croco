@@ -15,6 +15,7 @@
 
 #include "../inc/commands.h"
 #include "../inc/keys.h"
+#include "../inc/files.h"
 #include "../inc/util.h"
 
 #ifdef _WIN32
@@ -286,23 +287,12 @@ void process_kb()
  */
 void process_kup()
 {
-#if 0
 	if (highlight == 1) {
 		highlight = ndirs;
-		top_index = (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT) * (ndirs / (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT));
+		size_t _num = ndirs >= (size_t)MAIN_HEIGHT ? ndirs / MAIN_HEIGHT : 0;
+		top_index = _num == 0 ? 0 : MAIN_HEIGHT * _num;
 		print_main();
-	} else if (highlight % (HEIGHT - MARGIN_TOP) == 0) {
-		top_index -= (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT);
-		--highlight;
-	} else {
-		--highlight;
-	}
-#endif
-	if (highlight == 1) {
-		highlight = ndirs;
-		top_index = MAIN_HEIGHT * (ndirs / MAIN_HEIGHT);
-		print_main();
-	} else if (highlight % (MAIN_HEIGHT) == 1) {
+	} else if (highlight % MAIN_HEIGHT == 1) {
 		top_index -= MAIN_HEIGHT;
 		--highlight;
 		print_main();
@@ -335,12 +325,16 @@ void process_kleft()
 	strcpy(new_dir, "..\0");
 	nnew_dir = 2;
 	change_cwd(cwd, new_dir);
+	highlight = 1;
 	print_main();
+	print_linfo();
 }
 
 void process_kright() 
 {
-	if (is_file(cwd, dirs[highlight - 1])) {
+	char fpath[PATH_MAX] = { '\0' };
+	create_path(fpath, cwd, dirs[highlight - 1]);
+	if (is_file(fpath)) {
 		return;
 	}
 	const char *dir = dirs[highlight - 1];
@@ -353,6 +347,7 @@ void process_kright()
 
 	change_cwd(cwd, new_dir);
 	print_main();
+	print_linfo();
 }
 
 void process_control()
@@ -558,28 +553,6 @@ void assign_ndir(char *new_dir, const char *node)
 	new_dir[nnew_dir] = '\0';
 }
 
-bool is_file(char *src, char *fname)
-{
-	char ccwd[PATH_MAX] = { '\0' };
-	create_path(ccwd, src, fname);
-	struct stat path_stat;
-	if (stat(ccwd, &path_stat) == 0 && S_ISREG(path_stat.st_mode)) {
-		return true;	
-	}
-
-	return false;
-}
-
-/*
- *  path like: 
- * fullpath = src + fname
- */
-void create_path(char *fullpath, char *src, char *fname)
-{
-	strcpy(fullpath, src);
-	strcat(fullpath, fname);
-}
-
 /*
  * prints main window contend:
  * list of files and folders 
@@ -598,16 +571,20 @@ void print_main()
 	size_t pos_i = 0;
 	for (size_t i = top_index; i < min(ndirs, top_index + MAIN_HEIGHT); ++i) {
 		pos_i = 3 + i - top_index;
+		
+		char fpath[PATH_MAX] = { '\0' };
+		create_path(fpath, cwd, dirs[i]);
+
 		if (highlight == i + 1) {
 			wattron(main_win, A_REVERSE);
-			if (is_file(cwd, dirs[i])) {
+			if (is_file(fpath)) {
 				mvwprintw(main_win, pos_i, 1, dirs[i]);
 			} else {
 				colored_print(main_win, pos_i, 1, dirs[i], FOLDER_COLOR);
 			}
 			wattroff(main_win, A_REVERSE);
 		} else {
-			if (is_file(cwd, dirs[i])) {
+			if (is_file(fpath)) {
 				mvwprintw(main_win, pos_i, 1, dirs[i]);
 			} else {
 				colored_print(main_win, pos_i, 1, dirs[i], FOLDER_COLOR);
@@ -620,19 +597,22 @@ void print_main()
 void update_main(size_t highlight)
 {
 	size_t pos_i = 0;
-	for (size_t i = top_index; i < min(ndirs, top_index + HEIGHT); ++i) {
+	for (size_t i = top_index; i < min(ndirs, top_index + MAIN_HEIGHT); ++i) {
 		pos_i = 3 + i - top_index;
-		
+	
+		char fpath[PATH_MAX] = { '\0' };
+		create_path(fpath, cwd, dirs[i]);
+
 		if (highlight == i + 1) {
 			wattron(main_win, A_REVERSE);
-			if (is_file(cwd, dirs[i])) {
+			if (is_file(fpath)) {
 				mvwprintw(main_win, pos_i, 1, dirs[i]);
 			} else {
 				colored_print(main_win, pos_i, 1, dirs[i], FOLDER_COLOR);
 			}
 			wattroff(main_win, A_REVERSE);
 		} else {
-			if (is_file(cwd, dirs[i])) {
+			if (is_file(fpath)) {
 				mvwprintw(main_win, pos_i, 1, dirs[i]);
 			} else {
 				colored_print(main_win, pos_i, 1, dirs[i], FOLDER_COLOR);
@@ -656,9 +636,11 @@ void print_linfo()
 	/* printing prev dir name */
 	colored_print(linfo_win, 1, 1, prev_cwd, FOLDER_COLOR);
 
-
 	for (size_t i = 0; i < nprev_dirs; ++i) {
-		if (is_file(prev_cwd, prev_dirs[i])) {
+		char fpath[PATH_MAX] = { '\0' };
+		create_path(fpath, prev_cwd, prev_dirs[i]);
+
+		if (is_file(fpath)) {
 			mvwprintw(linfo_win, i + 3, 1, prev_dirs[i]);
 		} else {
 			colored_print(linfo_win, i + 3, 1, prev_dirs[i], FOLDER_COLOR);
@@ -677,16 +659,23 @@ void print_rinfo()
 	wclear(rinfo_win);
 	
 	/* printing file/dir name in color in info win */	
-	if (is_file(cwd, dirs[highlight - 1])) {
+	char fpath[PATH_MAX] = { '\0' };
+	create_path(fpath, cwd, dirs[highlight - 1]);
+
+	char fpermissions[10] = { '\0' };
+	get_fpermissions(fpath, fpermissions);
+	
+	if (is_file(fpath)) {
 		colored_print(rinfo_win, 1, 1, dirs[highlight - 1], INFO_FILE_COLOR);
 	} else {
 		colored_print(rinfo_win, 1, 1, dirs[highlight - 1], INFO_FOLDER_COLOR);
 	}
-	
+	colored_print(rinfo_win, 1, ((int)RIGHT_WIDTH) / 2, fpermissions, PERMISSION_MARKER);
+
 	/* adding a line delimeter */
 	mvwhline(rinfo_win, 2, 1, 0, WIDTH / 2 - 2);
 	
-	if (is_file(cwd, dirs[highlight - 1])) {
+	if (is_file(fpath)) {
 		print_file(dirs[highlight - 1]);
 	} else {
 		print_folder(dirs[highlight - 1]);
@@ -766,9 +755,11 @@ void print_folder(char *fname)
 			}
 
 			fd_name = fdir->d_name;
+			char folder_path[PATH_MAX] = { '\0' };
+			create_path(folder_path, fpath, fd_name);
 			// not goin to print . and .. folders in info window
 			if (strcmp(fd_name, ".") != 0 && strcmp(fd_name, "..") != 0) {
-				if (is_file(fpath, fd_name)) {
+				if (is_file(fpath)) {
 					mvwprintw(rinfo_win, print_y, print_x, "%s\n", fd_name);
 				} else {
 					colored_print(rinfo_win, print_y, print_x, fd_name, FOLDER_COLOR);
@@ -789,9 +780,32 @@ void print_cursor(WINDOW *win, int y, int x)
 
 void colored_print(WINDOW *win, int y, int x, char *text, int color)
 {
-	wattron(win, COLOR_PAIR(color));
-	mvwprintw(win, y, x, "%s\n", text);
-	wattroff(win, COLOR_PAIR(color));
+	if (color != PERMISSION_MARKER) {
+		wattron(win, COLOR_PAIR(color));
+		mvwprintw(win, y, x, "%s\n", text);
+		wattroff(win, COLOR_PAIR(color));
+	} else {
+		// USER
+		wattron(win, COLOR_PAIR(PERMISSION_USER));
+		for (int i = 0; i < 3; ++i) {
+			mvwaddch(win, y, x + i, text[i]);
+		}
+		wattroff(win, COLOR_PAIR(PERMISSION_USER));
+
+		// GROUP
+		wattron(win, COLOR_PAIR(PERMISSION_GROUP));
+		for (int i = 3; i < 6; ++i) {
+			mvwaddch(win, y, x + i, text[i]);
+		}
+		wattroff(win, COLOR_PAIR(PERMISSION_GROUP));
+
+		// OTHER
+		wattron(win, COLOR_PAIR(PERMISSION_OTHER));
+		for (int i = 6; i < 9; ++i) {
+			mvwaddch(win, y, x + i, text[i]);
+		}
+		wattroff(win, COLOR_PAIR(PERMISSION_OTHER));
+	}
 }
 
 void refresh_win(WINDOW *win) {
