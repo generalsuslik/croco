@@ -104,7 +104,6 @@ int main(int argc, char *argv[])
 	print_main();
 	print_linfo();
 	print_rinfo();
-	//for (int i = 0; i < MAIN_HEIGHT; ++i) printw("%d\n", i);
 	while (1) {
 		process_kb();
 		
