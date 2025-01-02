@@ -26,9 +26,9 @@
  * max len of folder path
  * max len of folder/file title
  */
-#define DIRS_MAX  320000
-#define PATH_MAX  16000
-#define TITLE_MAX 1000
+#define DIRS_MAX  32000
+#define PATH_MAX  1600
+#define TITLE_MAX 100
 #define NODE_INFO_MAX 128
 
 #define COMMAND_MAX 128

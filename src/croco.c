@@ -104,6 +104,7 @@ int main(int argc, char *argv[])
 	print_main();
 	print_linfo();
 	print_rinfo();
+	//for (int i = 0; i < MAIN_HEIGHT; ++i) printw("%d\n", i);
 	while (1) {
 		process_kb();
 		
@@ -289,11 +290,11 @@ void process_kup()
 {
 	if (highlight == 1) {
 		highlight = ndirs;
-		size_t _num = ndirs >= (size_t)MAIN_HEIGHT ? ndirs / MAIN_HEIGHT : 0;
-		top_index = _num == 0 ? 0 : MAIN_HEIGHT * _num;
+		size_t _num = ndirs >= (size_t)(HEIGHT - MARGIN_TOP - CONTROL_HEIGHT) ? ndirs / (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT) : 0; // cant fuckin explain 		
+		top_index = _num == 0 ? 0 : (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT) * _num; // why it works only this way
 		print_main();
-	} else if (highlight % MAIN_HEIGHT == 1) {
-		top_index -= MAIN_HEIGHT;
+	} else if (highlight > (size_t)(HEIGHT - MARGIN_TOP - CONTROL_HEIGHT) && highlight % (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT) == 1) {
+		top_index -= (HEIGHT - MARGIN_TOP - CONTROL_HEIGHT);
 		--highlight;
 		print_main();
 	} else {
@@ -662,15 +663,14 @@ void print_rinfo()
 	char fpath[PATH_MAX] = { '\0' };
 	create_path(fpath, cwd, dirs[highlight - 1]);
 
-	char fpermissions[10] = { '\0' };
-	get_fpermissions(fpath, fpermissions);
-	
 	if (is_file(fpath)) {
 		colored_print(rinfo_win, 1, 1, dirs[highlight - 1], INFO_FILE_COLOR);
 	} else {
 		colored_print(rinfo_win, 1, 1, dirs[highlight - 1], INFO_FOLDER_COLOR);
 	}
-	colored_print(rinfo_win, 1, ((int)RIGHT_WIDTH) / 2, fpermissions, PERMISSION_MARKER);
+	char *info = build_info(fpath);
+	colored_print(rinfo_win, 1, ((int)RIGHT_WIDTH) / 3, info, PERMISSION_MARKER);
+	free(info);
 
 	/* adding a line delimeter */
 	mvwhline(rinfo_win, 2, 1, 0, WIDTH / 2 - 2);
@@ -786,25 +786,30 @@ void colored_print(WINDOW *win, int y, int x, char *text, int color)
 		wattroff(win, COLOR_PAIR(color));
 	} else {
 		// USER
+		size_t i = 0;
 		wattron(win, COLOR_PAIR(PERMISSION_USER));
-		for (int i = 0; i < 3; ++i) {
+		for (i = 0; i < 3; ++i) {
 			mvwaddch(win, y, x + i, text[i]);
 		}
 		wattroff(win, COLOR_PAIR(PERMISSION_USER));
 
 		// GROUP
 		wattron(win, COLOR_PAIR(PERMISSION_GROUP));
-		for (int i = 3; i < 6; ++i) {
+		for (i = 3; i < 6; ++i) {
 			mvwaddch(win, y, x + i, text[i]);
 		}
 		wattroff(win, COLOR_PAIR(PERMISSION_GROUP));
 
 		// OTHER
 		wattron(win, COLOR_PAIR(PERMISSION_OTHER));
-		for (int i = 6; i < 9; ++i) {
+		for (i = 6; i < 9; ++i) {
 			mvwaddch(win, y, x + i, text[i]);
 		}
 		wattroff(win, COLOR_PAIR(PERMISSION_OTHER));
+
+		for (; i < strlen(text); ++i) {
+			mvwaddch(win, y, x + i, text[i]);
+		}
 	}
 }
 
