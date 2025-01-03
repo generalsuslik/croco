@@ -1,18 +1,125 @@
 #!/bin/bash
 
+######COLORS######
+BLUE="\e[34m"
+CYAN="\e[36m"
+GREEN="\e[32m"
+PINK="\e[35m"
+RED="\e[31m"
+
+RESET="\e[0m"
+
+BOLD="\e[1m"
+UNDERLINE="\e[4m"
+##################
+
+INFO=${CYAN}[INFO]${RESET}
+ERROR=${RED}[ERROR]${RESET}
+
 bin_dir=bin
 app_name=croco
 
-if [ -d "$bin_dir" ]; then
-	echo "Project bin directory exists"
+detect_distro() {
+	if command -v dpkg-query &> /dev/null; then
+		echo "debian"
+	elif command -v rpm &> /dev/null; then
+		echo "rpm"
+	elif command -v pacman &> /dev/null; then
+		echo "arch"
+	elif command -v dnf &> /dev/null; then
+		echo "fedora"
+	else
+		echo "UNSUPPORTED"
+	fi
+}
+
+check_package_installed() {
+	local distro="$1"
+	local package="$2"
+
+	case "$distro" in 
+		debin)
+			dpkg-query -W -f='${Status}' "$package" 2> /dev/null | grep -c "ok installed"
+			;;
+		rpm)
+			rpm -q "$package" &> /dev/null
+			;;
+		arch)
+			pacman -Q "$package" &> /dev/null
+			;;
+		fedora)
+			dnf list installed "$package" &> /dev/null
+			;;
+		*)
+			echo -e "${ERROR} ${RED}Unsupported package manager${RESET}"
+			exit 1
+			;;
+	esac
+}
+
+install_packages() {
+	local distro="$1"
+	shift
+	local packages=("$@")
+
+	echo -e "${INFO} ${BLUE}Installing missing packages: ${packages[*]}${RESET}"
+	case "$distro" in 
+		debian)
+			sudo apt-get update
+			sudo apt-get install -y "${packages[@]}"
+			;;
+		rpm)
+			sudo yum install -y "${packages[@]}"
+			;;
+		arch)
+			sudo pacman -S --needed "${packages[@]}"
+			;;
+		*)
+			echo -e "${ERROR} ${RED}Unsupported package manager${RESET}"
+			exit 1
+			;;
+	esac
+}
+
+distro=$(detect_distro)
+if [ "$distro" == "UNSUPPORTED" ]; then
+	echo -e "${ERROR}${RED}Usupported os${RESET}"
+	exit 1
 else 
-	echo "Project bin directory does not exist. Creating it..."
-	mkdir $bin_dir
-	echo "Project bin directory created."
+	echo -e "${INFO} Detected os: ${PINK}${UNDERLINE}${distro}${RESET}"
 fi
 
-echo "Making the project with make"
+if [ -d "$bin_dir" ]; then
+	echo -e "${INFO} Project bin directory exists"
+else 
+	echo -e "${INFO} Project bin directory does not exist. Creating it..."
+	mkdir $bin_dir
+	echo -e "${GREEN}[CREATED] Project bin directory created.${RESET}"
+fi
+
+required_packages=("ncurses" "make")
+if [ "$distro" == "debian" ]; then
+	required_packages=("libncursesw5-dev" "make")
+fi
+missing_packages=()
+for package in "${required_packages[@]}"; do
+	if check_package_installed "$distro" "$package"; then
+		echo -e "${INFO} Package ${PINK}${UNDERLINE}$package${RESET} is already installed"
+	else
+		echo -e "${ERROR} Package ${PINK}${UNDERLINE}$package${RESET} is missing"
+		missing_packages+=("$package")
+	fi
+done
+
+if [ ${#missing_packages[@]} -ne 0 ]; then
+	install_packages "$distro" "${missing_packages[@]}"
+else
+	echo -e "${INFO} ${GREEN}${BOLD}All required_packages are already installed${RESET}"
+fi
+
+echo -e "${INFO} Making the project with make"
 make
+echo -e "${GREEN}[CREATED] Project is made${RESET}"
 
 attempts=0
 max_attempts=3
@@ -29,7 +136,7 @@ while ((attempts < max_attempts)); do
 			;;
 
 		*)
-			echo -e "\e[31mInvalid input. Please try again\e[0m"
+			echo -e "${RED}[ERROR]${RESET} ${RED}Invalid input. Please try again${RESET}"
 			;;
 	esac
 
@@ -37,11 +144,11 @@ while ((attempts < max_attempts)); do
 done
 
 if (( attempts == max_attempts )); then
-	echo -e "\e[31mWrong inputs: 3. Aborting...\e[0m"
+	echo -e "${RED}[ERROR]${RESET} ${RED}${BOLD}Wrong inputs: 3. Aborting...${RESET}"
 	exit 1
 fi
 
-echo "Continuing..."
+echo -e "${INFO} Continuing..."
 
 
 
