@@ -114,15 +114,8 @@ int main(int argc, char *argv[])
 		print_main();
 		print_linfo();
 	}
-
-	for (size_t i = 0; i < ndirs; ++i) {
-		free(dirs[i]);
-	}
-
-	for (size_t i = 0; i < nprev_dirs; ++i) {
-		free(prev_dirs[i]);
-	}
 	
+	free_dirs();
 	end();
 
 	return 0;
@@ -816,6 +809,17 @@ void refresh_win(WINDOW *win) {
 	box(win, 0, 0);
 	wrefresh(win);
 	refresh();
+}
+
+void free_dirs() 
+{
+	for (size_t i = 0; i < ndirs; ++i) {
+		free(dirs[i]);
+	}
+
+	for (size_t i = 0; i < nprev_dirs; ++i) {
+		free(prev_dirs[i]);
+	}
 }
 
 void end()
