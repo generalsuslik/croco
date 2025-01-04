@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
 		
 		assign_ndir(new_dir, dirs[--choice]);
 		change_cwd(cwd, new_dir);
+
 		highlight = 1;
 		choice = 0;
 		print_main();
@@ -253,9 +254,16 @@ void process_kb()
 				exit(EXIT_SUCCESS);
 				break;
 
-			case KKEY_ENTER:
-				choice = highlight;
-				break;
+			case KKEY_ENTER: {
+					char path[PATH_MAX] = { '\0' };
+					create_path(path, cwd, dirs[highlight - 1]);
+					if (!is_file(path)) {
+						choice = highlight;
+					} else {
+						open_file(path);
+					}
+					break;
+				}
 			
 			case ':':
 				waddch(control_win, ':');

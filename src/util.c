@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
 
@@ -28,5 +29,18 @@ int compare(const void *arg1, const void *arg2)
 inline size_t min(size_t a, size_t b) 
 {
 	return a > b ? b : a;
+}
+
+void open_file(const char *path)
+{
+	size_t command_len = 256;
+	char command[command_len];
+	snprintf(command, command_len, "xdg-open %s", path);
+	
+	int err = system(command);
+	if (err == -1) {
+		fprintf(stderr, "Error during openning %s\n", path);
+		exit(EXIT_FAILURE);
+	}
 }
 
