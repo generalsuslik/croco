@@ -14,7 +14,8 @@ make && make run
 ```
 
 ## Controls
-* Arrow keys to navigate through dirs
+* Arrow keys || h-j-k-l to navigate through dirs
+* Enter to open the file / enter the directory
 * commands:
 	* add file/folder
 		```
