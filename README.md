@@ -4,7 +4,7 @@
 
 ## croco - 🐊Efficient terminal file manager  
 
-🖥️ Start script for smart initialization:
+🖥️ Start script for smart installation:
 ```bash
 ./init
 ```
@@ -12,10 +12,13 @@ Or you can just make it 🤓
 ```bash
 make && make run
 ```
+But make sure, that required packages installed\
+Required packages:
+* `ncurses`
 
 ## Controls
-* Arrow keys || h-j-k-l to navigate through dirs
-* Enter to open the file / enter the directory
+* Arrow keys or h-j-k-l to navigate through dirs
+* <Enter> to open the file / enter the directory / execute the command
 * commands:
 	* add file/folder
 		```
@@ -31,4 +34,12 @@ make && make run
 		```
 		:r <folder>/
 		```
+	* exit
+		* exit from intergrated command line
+			```
+			:q
+			```
+		* exit with pressing F1 button on your keyboard
+
+	
 
