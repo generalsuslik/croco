@@ -91,6 +91,8 @@ int ch;
 size_t highlight = 1;
 size_t choice = 0;
 
+bool quit = false;
+
 int main(int argc, char *argv[])
 {
 	init();
@@ -104,9 +106,8 @@ int main(int argc, char *argv[])
 	print_main();
 	print_linfo();
 	print_rinfo();
-	while (1) {
+	while (!quit) {
 		process_kb();
-		
 		assign_ndir(new_dir, dirs[--choice]);
 		change_cwd(cwd, new_dir);
 
@@ -116,7 +117,6 @@ int main(int argc, char *argv[])
 		print_linfo();
 	}
 	
-	free_dirs();
 	end();
 
 	return 0;
@@ -211,7 +211,7 @@ void check_win_err()
  */
 void process_kb()
 {
-	while (1) {
+	while (!quit) {
 		update_main(highlight);
 		print_rinfo();
 
@@ -336,16 +336,17 @@ void process_kright()
 	char fpath[PATH_MAX] = { '\0' };
 	create_path(fpath, cwd, dirs[highlight - 1]);
 	if (is_file(fpath)) {
+		open_file(fpath);
 		return;
 	}
 	const char *dir = dirs[highlight - 1];
 	const size_t len = strlen(dir);
 
-	strcpy(new_dir, cwd);
+	//strcpy(new_dir, cwd);
 	strcpy(new_dir, dir);
+	nnew_dir = len;
 
-	nnew_dir = ncwd + len;
-
+	highlight = 1;
 	change_cwd(cwd, new_dir);
 	print_main();
 	print_linfo();
@@ -415,8 +416,8 @@ void process_control()
 
 	buffer[buffer_len] = '\0';
 
-	process_command(cwd, buffer);
-	
+	quit = process_command(cwd, buffer);
+
 	// updating arrays of dirs & files
 	open_wd(cwd, dirs, &ndirs);
 	open_wd(prev_cwd, prev_dirs, &nprev_dirs);
@@ -425,7 +426,6 @@ void process_control()
 	wclear(control_win);
 
 	keypad(control_win, FALSE);
-
 }
 
 void get_cwd(char *cwd, int argc, char *argv[])
@@ -819,6 +819,12 @@ void refresh_win(WINDOW *win) {
 	refresh();
 }
 
+void end() 
+{
+	free_dirs();
+	end_curses();
+}
+
 void free_dirs() 
 {
 	for (size_t i = 0; i < ndirs; ++i) {
@@ -830,7 +836,7 @@ void free_dirs()
 	}
 }
 
-void end()
+void end_curses()
 {
 	delwin(main_win);
 	delwin(linfo_win);

@@ -1,4 +1,5 @@
 #include <dirent.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,8 +19,9 @@
  *		:r file.jpg
  *		:r folder/
  *
+ * @return 1 - quit | 0 - do not quit
  */
-void process_command(const char *wd, const char *buffer)
+bool process_command(const char *wd, const char *buffer)
 {
 	char copy_wd[1024];
 	strcpy(copy_wd, wd);
@@ -61,6 +63,9 @@ void process_command(const char *wd, const char *buffer)
 		case FIND:
 			break;
 
+		case QUIT:
+			return true;
+
 		case UNRECOGNIZED:
 			break;
 
@@ -72,6 +77,8 @@ void process_command(const char *wd, const char *buffer)
 		free(command[i]);
 	}
 	free(command);
+	
+	return false;
 }
 
 void create_dir(const char *path)
@@ -213,6 +220,9 @@ operation_t get_operation(const char *buffer)
 
 		case 'f':
 			return FIND;
+
+		case 'q':
+			return QUIT;
 
 		default:
 			break;

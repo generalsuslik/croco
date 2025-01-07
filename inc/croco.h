@@ -78,8 +78,9 @@ void print_folder(char *fname);
 void print_cursor(WINDOW* win, int y, int x);
 void colored_print(WINDOW *win, int y, int x, char *text, int color);
 void refresh_win(WINDOW *win);
-void free_dirs();
 void end();
+void free_dirs();
+void end_curses();
 
 #endif // FMANAGER_H
 

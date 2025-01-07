@@ -5,10 +5,11 @@ typedef enum operation {
 	ADD,
 	REMOVE,
 	FIND,
+	QUIT,
 	UNRECOGNIZED,
 } operation_t;
 
-void process_command(const char *wd, const char *buffer);
+bool process_command(const char *wd, const char *buffer);
 
 void create_dir(const char *path);
 void remove_dir(const char *path);
