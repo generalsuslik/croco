@@ -56,6 +56,7 @@ char *build_info(const char *path)
 	get_fpermissions(path, permissions);
 
 	strcat(info, permissions);
+#if 0
 	strcat(info, "|");
 
 	// -----------LAST MODIFIED TIME--------//
@@ -101,7 +102,7 @@ char *build_info(const char *path)
 	added_len = strlen(size_str);
 	size_str[added_len] = ' ';
 	strcat(info, size_str);
-
+#endif
 	return info;
 }
 

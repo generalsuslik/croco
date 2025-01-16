@@ -669,7 +669,7 @@ void print_rinfo()
 		colored_print(rinfo_win, 1, 1, dirs[highlight - 1], INFO_FOLDER_COLOR);
 	}
 	char *info = build_info(fpath);
-	colored_print(rinfo_win, 1, ((int)RIGHT_WIDTH) / 3, info, PERMISSION_MARKER);
+	colored_print(rinfo_win, 1, RIGHT_WIDTH - strlen(info) - 1, info, PERMISSION_MARKER);
 	free(info);
 
 	/* adding a line delimeter */
