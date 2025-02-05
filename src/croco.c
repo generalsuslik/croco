@@ -759,7 +759,7 @@ void print_folder(char *fname)
 			create_path(folder_path, fpath, fd_name);
 			// not goin to print . and .. folders in info window
 			if (strcmp(fd_name, ".") != 0 && strcmp(fd_name, "..") != 0) {
-				if (is_file(fpath)) {
+				if (is_file(folder_path)) {
 					mvwprintw(rinfo_win, print_y, print_x, "%s\n", fd_name);
 				} else {
 					colored_print(rinfo_win, print_y, print_x, fd_name, FOLDER_COLOR);

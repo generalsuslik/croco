@@ -4,6 +4,14 @@
 
 ## croco - 🐊Efficient terminal file manager  
 
+<div align="center">
+	<img src="assets/screenshot_1.png" alt="Screenshot 1"/>
+</div>
+<div align="center">
+	<img src="assets/screenshot_2.png" alt="Screenshot 2"/>
+</div>
+
+## Installation
 🖥️ Start script for smart installation:
 ```bash
 ./init

@@ -143,17 +143,18 @@ read -p "Enter your choice (default=1): " ans
 ans=${ans:-1}
 
 if [[ "$ans" == "1" ]]; then
-  echo -e "${INFO} Making the project with make"
-  make
-  echo -e "${GREEN}[CREATED] Project is made (with make)${RESET}"
+	echo -e "${INFO} Making the project with make"
+	make
+	echo -e "${GREEN}[CREATED] Project is made (with make)${RESET}"
 elif [[ "$ans" == "2" ]]; then
-  echo -e "${INFO} Making the project with make"
-  mkdir -p build && cd build
-  cmake ..
-  make
-  echo -e "${GREEN}[CREATED] Project is made (with cmake)${RESET}"
+	echo -e "${INFO} Making the project with make"
+	mkdir -p build && cd build
+	cmake ..
+	make
+	bin_dir="."
+	echo -e "${GREEN}[CREATED] Project is made (with cmake)${RESET}"
 else
-  echo "Invalid choice"
+	echo "Invalid choice"
 fi
 
 attempts=0
