@@ -38,7 +38,7 @@ check_package_installed() {
 	local package="$2"
 
 	case "$distro" in 
-		debin)
+		debian)
 			dpkg-query -W -f='${Status}' "$package" 2> /dev/null | grep -c "ok installed"
 			;;
 		rpm)
