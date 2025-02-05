@@ -20,6 +20,15 @@ Required packages:
 * Arrow keys or h-j-k-l to navigate through dirs
 * <Enter> to open the file / enter the directory / execute the command
 * commands:
+	* run croco app
+		* Run from /home/<username> directory
+		```bash
+		./croco 
+		```
+		* Run from your current directory
+		```bash
+		./croco .
+		```
 	* add file/folder
 		```
 		:a <file>
@@ -35,7 +44,7 @@ Required packages:
 		:r <folder>/
 		```
 	* exit
-		* exit from intergrated command line
+		* exit from integrated command line
 			```
 			:q
 			```

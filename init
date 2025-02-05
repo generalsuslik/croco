@@ -96,13 +96,13 @@ else
 	echo -e "${GREEN}[CREATED] Project bin directory created.${RESET}"
 fi
 
-required_packages=("ncurses" "make") # arch
+required_packages=("ncurses" "make" "cmake") # arch
 if [ "$distro" == "debian" ]; then
-	required_packages=("libncursesw5-dev" "make")
+	required_packages=("libncursesw5-dev" "make" "cmake")
 elif [ "$distro" == "rpm" ]; then
-	required_packages=("ncurses", "make")
+	required_packages=("ncurses" "make" "cmake")
 elif [ "$distro" == "fedora" ]; then
-	required_packages=("ncurses", "make")
+	required_packages=("ncurses" "make" "cmake")
 fi
 missing_packages=()
 for package in "${required_packages[@]}"; do
@@ -135,14 +135,31 @@ else
 	echo -e "${INFO} ${GREEN}${BOLD}All required_packages are already installed${RESET}"
 fi
 
-echo -e "${INFO} Making the project with make"
-make
-echo -e "${GREEN}[CREATED] Project is made${RESET}"
+echo "Choose your build system:"
+echo "1) Make"
+echo "2) Cmake"
+read -p "Enter your choice (default=1): " ans
+
+ans=${ans:-1}
+
+if [[ "$ans" == "1" ]]; then
+  echo -e "${INFO} Making the project with make"
+  make
+  echo -e "${GREEN}[CREATED] Project is made (with make)${RESET}"
+elif [[ "$ans" == "2" ]]; then
+  echo -e "${INFO} Making the project with make"
+  mkdir -p build && cd build
+  cmake ..
+  make
+  echo -e "${GREEN}[CREATED] Project is made (with cmake)${RESET}"
+else
+  echo "Invalid choice"
+fi
 
 attempts=0
 max_attempts=3
 while ((attempts < max_attempts)); do
-	read -p "Do you want to add croco to your /bin/ folder (afterwards you  will be asked about creating alias) (y/N): " ans
+	read -p "Do you want to add croco to your /bin/ directory (y/N): " ans
 	case $ans in
 		[yY])
 			sudo cp "$bin_dir/$app_name" /usr/bin/
@@ -166,32 +183,7 @@ if ((attempts == max_attempts)); then
 	exit 1
 fi
 
-attempts=0
-while ((attempts < max_attempts)); do
-	read -p "Do you want to create alias for croco app (y/N): " ans
-	case $ans in
-		[yY])
-			echo "Created alias"
-			break
-			;;
-
-		[nN])
-			break
-			;;
-
-		*)
-			echo -e "${RED}[ERROR]${RESET} ${RED}Invalid input. Please try again${RESET}"
-			;;
-	esac
-	((++attempts))
-done
-
-if ((attempts == max_attempts)); then
-	echo -e "${RED}[ERROR]${RESET} ${RED}${BOLD}Wrong inputs: 3. Aborting...${RESET}"
-	exit 1
-fi
-
-echo -e "${INFO} Continuing..."
+echo -e "${INFO} Installation completed"
 
 
 
