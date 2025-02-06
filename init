@@ -154,7 +154,8 @@ elif [[ "$ans" == "2" ]]; then
 	bin_dir="."
 	echo -e "${GREEN}[CREATED] Project is made (with cmake)${RESET}"
 else
-	echo "Invalid choice"
+	echo -e "${ERROR} Invalid choice"
+	exit 1
 fi
 
 attempts=0
