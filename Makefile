@@ -9,6 +9,7 @@ BIN_DIR = bin
 SOURCES = $(SRC_DIR)/*.c
 
 DEL_FILE = rm -f
+MKDIR_P = mkdir -p
 LIBS_DIRS = -I/.include/
 LIBS = $(LIBS_DIRS) -lncurses -lc
 
@@ -22,5 +23,6 @@ run:
 	./$(BIN_DIR)/$(TARGET)
 
 clean:
+	${MKDIR_P} ${BIN_DIR}
 	$(DEL_FILE) $(BIN_DIR)/*
 
