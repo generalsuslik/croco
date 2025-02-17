@@ -26,7 +26,7 @@ Required packages:
 
 ## Controls
 * Arrow keys or h-j-k-l to navigate through dirs
-* <Enter> to open the file / enter the directory / execute the command
+* Press "Enter" to open the file / enter the directory / execute the command
 * commands:
 	* run croco app
 		* Run from /home/<username> directory

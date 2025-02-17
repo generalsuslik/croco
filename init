@@ -20,14 +20,14 @@ bin_dir=bin
 app_name=croco
 
 detect_distro() {
-	if command -v dpkg-query &> /dev/null; then
+	if command -v dnf &> /dev/null; then
+		echo "fedora"
+	elif command -v dpkg-query &> /dev/null; then
 		echo "debian"
 	elif command -v rpm &> /dev/null; then
 		echo "rpm"
 	elif command -v pacman &> /dev/null; then
 		echo "arch"
-	elif command -v dnf &> /dev/null; then
-		echo "fedora"
 	else
 		echo "UNSUPPORTED"
 	fi
