@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include <time.h>
 
-#include "../inc/files.h"
+#include "files.h"
 
 struct stat get_stat(const char *path) 
 {

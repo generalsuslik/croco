@@ -11,12 +11,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "../inc/croco.h"
+#include "croco.h"
 
-#include "../inc/commands.h"
-#include "../inc/keys.h"
-#include "../inc/files.h"
-#include "../inc/util.h"
+#include "commands.h"
+#include "keys.h"
+#include "files.h"
+#include "util.h"
 
 #ifdef _WIN32
 	perror("Not linux os\n");
@@ -76,10 +76,10 @@ size_t ndirs = 0;
 char *prev_dirs[DIRS_MAX];
 size_t nprev_dirs = 0;
 
-char cwd[PATH_MAX]; // current working directory
+char cwd[CROCO_PATH_MAX]; // current working directory
 size_t ncwd = 0;
 
-char prev_cwd[PATH_MAX]; // parent of cwd
+char prev_cwd[CROCO_PATH_MAX]; // parent of cwd
 size_t nprev_cwd = 0;
 
 size_t top_index = 0;  // cwd[top_index] will be shown on top of the main_win. it's for scrolling
@@ -255,7 +255,7 @@ void process_kb()
 				break;
 
 			case KKEY_ENTER: {
-					char path[PATH_MAX] = { '\0' };
+					char path[CROCO_PATH_MAX] = { '\0' };
 					create_path(path, cwd, dirs[highlight - 1]);
 					if (!is_file(path)) {
 						choice = highlight;
@@ -333,7 +333,7 @@ void process_kleft()
 
 void process_kright() 
 {
-	char fpath[PATH_MAX] = { '\0' };
+	char fpath[CROCO_PATH_MAX] = { '\0' };
 	create_path(fpath, cwd, dirs[highlight - 1]);
 	if (is_file(fpath)) {
 		open_file(fpath);
@@ -437,7 +437,7 @@ void get_cwd(char *cwd, int argc, char *argv[])
 		strcat(cwd, "/\0");
 		ncwd = strlen(cwd);
 	} else if (strcmp(argv[0], ".")) {
-		if (getcwd(cwd, PATH_MAX) == NULL) {
+		if (getcwd(cwd, CROCO_PATH_MAX) == NULL) {
 			end();
 			fprintf(stderr, "getcwd error\n");
 			exit(EXIT_FAILURE);
@@ -497,7 +497,7 @@ void open_wd(const char *wd, char **dirs_arr, size_t *ndirs_arr)
 	struct dirent *dir;
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
-			dirs_arr[*ndirs_arr] = malloc(PATH_MAX * sizeof(char));
+			dirs_arr[*ndirs_arr] = malloc(CROCO_PATH_MAX * sizeof(char));
 			strcpy(dirs_arr[(*ndirs_arr)++], dir->d_name);
 		}
 	} else {
@@ -573,7 +573,7 @@ void print_main()
 	for (size_t i = top_index; i < min(ndirs, top_index + MAIN_HEIGHT); ++i) {
 		pos_i = 3 + i - top_index;
 		
-		char fpath[PATH_MAX] = { '\0' };
+		char fpath[CROCO_PATH_MAX] = { '\0' };
 		create_path(fpath, cwd, dirs[i]);
 
 		if (highlight == i + 1) {
@@ -601,7 +601,7 @@ void update_main(size_t highlight)
 	for (size_t i = top_index; i < min(ndirs, top_index + MAIN_HEIGHT); ++i) {
 		pos_i = 3 + i - top_index;
 	
-		char fpath[PATH_MAX] = { '\0' };
+		char fpath[CROCO_PATH_MAX] = { '\0' };
 		create_path(fpath, cwd, dirs[i]);
 
 		if (highlight == i + 1) {
@@ -638,7 +638,7 @@ void print_linfo()
 	colored_print(linfo_win, 1, 1, prev_cwd, FOLDER_COLOR);
 
 	for (size_t i = 0; i < nprev_dirs; ++i) {
-		char fpath[PATH_MAX] = { '\0' };
+		char fpath[CROCO_PATH_MAX] = { '\0' };
 		create_path(fpath, prev_cwd, prev_dirs[i]);
 
 		if (is_file(fpath)) {
@@ -660,7 +660,7 @@ void print_rinfo()
 	wclear(rinfo_win);
 	
 	/* printing file/dir name in color in info win */	
-	char fpath[PATH_MAX] = { '\0' };
+	char fpath[CROCO_PATH_MAX] = { '\0' };
 	create_path(fpath, cwd, dirs[highlight - 1]);
 
 	if (is_file(fpath)) {
@@ -689,7 +689,7 @@ void print_rinfo()
  */
 void print_file(char *fname)
 {
-	char fpath[PATH_MAX] = { '\0' };
+	char fpath[CROCO_PATH_MAX] = { '\0' };
 	create_path(fpath, cwd, fname);
 
 	FILE *f_ptr = fopen(fpath, "r");
@@ -726,7 +726,7 @@ void print_file(char *fname)
  */
 void print_folder(char *fname)
 {
-	char fpath[PATH_MAX] = { '\0' };
+	char fpath[CROCO_PATH_MAX] = { '\0' };
 	create_path(fpath, cwd, fname);
 
 	int len = strlen(fpath);
@@ -755,7 +755,7 @@ void print_folder(char *fname)
 			}
 
 			fd_name = fdir->d_name;
-			char folder_path[PATH_MAX] = { '\0' };
+			char folder_path[CROCO_PATH_MAX] = { '\0' };
 			create_path(folder_path, fpath, fd_name);
 			// not goin to print . and .. folders in info window
 			if (strcmp(fd_name, ".") != 0 && strcmp(fd_name, "..") != 0) {

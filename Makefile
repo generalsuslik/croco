@@ -1,5 +1,5 @@
 CC = gcc
-CC_FLAGS = -g -W -Werror -Wall -Wpedantic -std=c11 
+CC_FLAGS = -g -W -Werror -Wall -Wpedantic -std=c11
 
 TARGET = croco
 
@@ -10,7 +10,7 @@ SOURCES = $(SRC_DIR)/*.c
 
 DEL_FILE = rm -f
 MKDIR_P = mkdir -p
-LIBS_DIRS = -I/.include/
+LIBS_DIRS = -Iinc
 LIBS = $(LIBS_DIRS) -lncurses -lc
 
 .PHONY: clean build
@@ -25,4 +25,3 @@ run:
 clean:
 	${MKDIR_P} ${BIN_DIR}
 	$(DEL_FILE) $(BIN_DIR)/*
-
