@@ -27,7 +27,7 @@
  * max len of folder/file title
  */
 #define DIRS_MAX  32000
-#define PATH_MAX  1600
+#define CROCO_PATH_MAX  1600
 #define TITLE_MAX 100
 #define NODE_INFO_MAX 128
 

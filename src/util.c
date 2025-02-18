@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <strings.h>
 
-#include "../inc/util.h"
+#include "util.h"
 
 void sort_dirs(char *dirs[], const size_t len)
 {

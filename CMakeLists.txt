@@ -1,20 +1,34 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.23)
 project(croco VERSION 0.2.0)
 
-set(CMAKE_C_STANDART 11)
-set(CMAKE_C_STANDART_REQUIRED ON)
-
 find_package(Curses REQUIRED)
-include_directories(${CURSES_INCLUDE_DIR})
 
-set (SOURSES
-	src/commands.c
-	src/croco.c
-	src/files.c
-	src/util.c
+# FindCurses hasn't been updated to use modern CMake, so do it ourselves
+add_library(Curses::Curses INTERFACE IMPORTED)
+target_include_directories(Curses::Curses INTERFACE ${CURSES_INCLUDE_DIRS})
+target_link_libraries(Curses::Curses INTERFACE ${CURSES_LIBRARIES})
+target_compile_options(Curses::Curses INTERFACE ${CURSES_CFLAGS})
+
+add_executable(croco)
+
+target_compile_features(croco
+  PRIVATE
+    c_std_11
 )
 
-add_executable(${PROJECT_NAME} ${SOURSES})
+target_sources(croco
+  PRIVATE
+    src/commands.c
+    src/croco.c
+    src/files.c
+    src/util.c
 
-target_link_libraries(${PROJECT_NAME} ${CURSES_LIBRARIES})
+  PRIVATE
+    FILE_SET HEADERS
+    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/inc
+)
 
+target_link_libraries(croco 
+  PRIVATE 
+    Curses::Curses
+)

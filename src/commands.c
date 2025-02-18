@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "../inc/commands.h"
+#include "commands.h"
 
 /*
  * commands:
