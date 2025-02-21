@@ -14,6 +14,7 @@
 #include "croco.h"
 
 #include "commands.h"
+#include "help.h"
 #include "keys.h"
 #include "files.h"
 #include "util.h"
@@ -95,6 +96,11 @@ bool quit = false;
 
 int main(int argc, char *argv[])
 {
+	if (argc == 2 && strcmp(argv[1], "--help") == 0) {
+		help();
+		exit(EXIT_SUCCESS);
+	}
+
 	init();
 	init_colors();
 	init_wins();
@@ -431,12 +437,10 @@ void process_control()
 void get_cwd(char *cwd, int argc, char *argv[])
 {
 	if (argc == 1) {
-		// cwd = /home/<username>
-		strcpy(cwd, "/home/");
-		strcat(cwd, getenv("USER"));
-		strcat(cwd, "/\0");
+		// cwd = $HOME 
+		snprintf(cwd, TITLE_MAX, "%s/", getenv("HOME"));
 		ncwd = strlen(cwd);
-	} else if (strcmp(argv[0], ".")) {
+	} else if (strcmp(argv[1], ".") == 0) {
 		if (getcwd(cwd, CROCO_PATH_MAX) == NULL) {
 			end();
 			fprintf(stderr, "getcwd error\n");

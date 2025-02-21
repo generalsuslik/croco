@@ -55,6 +55,7 @@ bool process_command(const char *wd, const char *buffer)
 			} else {
 				int err = remove_file(path);
 				if (err) {
+					fprintf(stderr, "[process_command] failed to remove file %s\n", path);
 					exit(EXIT_FAILURE);
 				}
 			}
