@@ -3,6 +3,7 @@
  * and getting it's info
  */
 
+#define _POSIX_C_SOURCE 200809L
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +17,8 @@
 struct stat get_stat(const char *path) 
 {
 	struct stat file_stat;
-	if (stat(path, &file_stat) == -1) {
+	if (lstat(path, &file_stat) == -1) {
+		perror("files.c::get_stat");
 		exit(EXIT_FAILURE);
 	}
 	return file_stat;
